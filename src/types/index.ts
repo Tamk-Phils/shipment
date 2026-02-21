@@ -33,3 +33,20 @@ export interface Shipment {
     is_deleted?: boolean;
     updates: ShipmentUpdate[];
 }
+
+export interface ChatRoom {
+    id: string;
+    customer_name?: string;
+    last_message?: string;
+    status: 'open' | 'closed';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ChatMessage {
+    id: string;
+    room_id: string;
+    sender_role: 'admin' | 'user';
+    content: string;
+    created_at: string;
+}

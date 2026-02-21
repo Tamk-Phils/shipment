@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { LayoutDashboard, Package, PlusCircle, LogOut, ArrowLeft, Menu, X, LucideIcon } from "lucide-react";
+import { LayoutDashboard, Package, PlusCircle, LogOut, ArrowLeft, Menu, X, LucideIcon, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
@@ -98,6 +98,7 @@ export default function AdminLayout({
         { label: "Overview", icon: LayoutDashboard, href: "/admin/dashboard" },
         { label: "Active Shipments", icon: Package, href: "/admin/dashboard/shipments" },
         { label: "Add Shipment", icon: PlusCircle, href: "/admin/dashboard/add" },
+        { label: "Live Messages", icon: MessageSquare, href: "/admin/dashboard/chat" },
     ];
 
     return (
