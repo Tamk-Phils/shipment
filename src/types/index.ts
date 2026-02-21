@@ -12,11 +12,14 @@ export interface ShipmentUpdate {
 export interface Shipment {
     id: string;
     tracking_number: string;
-    shipment_name: string; // Unique reference name
     item_type: string;     // What is being shipped
     description: string;   // Full cargo description
     sender_name?: string;
+    sender_email?: string;
     recipient_name?: string;
+    recipient_address?: string;
+    recipient_email?: string;
+    recipient_phone?: string;
     origin?: string;
     destination?: string;
     current_status: ShipmentStatus;

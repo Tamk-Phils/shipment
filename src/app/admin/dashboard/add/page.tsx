@@ -1,20 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Save, Package, User, MapPin, Scale, Maximize, AlertCircle, Clock, CreditCard, Tag, FileText, Calendar } from "lucide-react";
+import { ArrowLeft, Save, Package, User, MapPin, Scale, Maximize, AlertCircle, Clock, CreditCard, Tag, FileText, Calendar, Copy, Check, Mail, Phone } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Shipment } from "@/types";
+import { supabase } from "@/lib/supabase";
 
 export default function AddShipment() {
     const router = useRouter();
+    const [isCopying, setIsCopying] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
         tracking_number: `TRK${Math.floor(100000000 + Math.random() * 900000000)}`,
-        shipment_name: "",
         item_type: "",
         description: "",
         sender_name: "",
+        sender_email: "",
         recipient_name: "",
+        recipient_address: "",
+        recipient_email: "",
+        recipient_phone: "",
         origin: "",
         destination: "",
         weight: "",
@@ -27,27 +33,21 @@ export default function AddShipment() {
 
     const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleCopy = () => {
+        navigator.clipboard.writeText(formData.tracking_number);
+        setIsCopying(true);
+        setTimeout(() => setIsCopying(false), 2000);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setIsSaving(true);
 
-        // Uniqueness validation for shipment_name
-        const existingRaw = localStorage.getItem("trackflow_shipments");
-        const existing: Shipment[] = existingRaw ? JSON.parse(existingRaw) : [];
-
-        const isDuplicate = existing.some(s => s.shipment_name.toLowerCase() === formData.shipment_name.toLowerCase());
-
-        if (isDuplicate) {
-            setError(`The shipment name "${formData.shipment_name}" is already in use. Please choose a unique reference name.`);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
-        }
-
-        const newShipment: any = {
+        const newShipment = {
             ...formData,
-            id: Math.random().toString(36).substr(2, 9),
-            status: formData.current_status,
             weight: parseFloat(formData.weight) || 0,
+            estimated_delivery: formData.estimated_delivery ? new Date(formData.estimated_delivery).toISOString() : null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             updates: [
@@ -61,11 +61,28 @@ export default function AddShipment() {
             ]
         };
 
-        existing.push(newShipment);
-        localStorage.setItem("trackflow_shipments", JSON.stringify(existing));
+        try {
+            const { error: sbError } = await supabase
+                .from('shipments')
+                .insert([newShipment]);
 
-        alert(`Shipment ${formData.shipment_name} (${formData.tracking_number}) registered successfully!`);
-        router.push("/admin/dashboard/shipments");
+            if (sbError) throw sbError;
+
+            // Optional: fallback to localStorage for redundancy or if Supabase isn't configured yet
+            const existingRaw = localStorage.getItem("trackflow_shipments");
+            const existing: any[] = existingRaw ? JSON.parse(existingRaw) : [];
+            existing.push({ ...newShipment, id: Math.random().toString(36).substr(2, 9) });
+            localStorage.setItem("trackflow_shipments", JSON.stringify(existing));
+
+            alert(`Shipment ${formData.tracking_number} registered successfully!`);
+            router.push("/admin/dashboard/shipments");
+        } catch (err: any) {
+            console.error(err);
+            setError(`Database Error: ${err.message || "Failed to save to Supabase. Ensure your environment variables are set."}`);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -76,7 +93,7 @@ export default function AddShipment() {
                 </Link>
                 <div>
                     <h1 className="text-4xl font-extrabold text-slate-900">Shipment Registration</h1>
-                    <p className="text-slate-500 text-lg font-bold">Capture core logistics data for a new cargo flow.</p>
+                    <p className="text-slate-500 text-lg font-bold">Capture core logistics data for global tracking.</p>
                 </div>
             </div>
 
@@ -90,28 +107,29 @@ export default function AddShipment() {
             <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="bg-white p-10 rounded-[40px] border border-slate-200 shadow-xl shadow-slate-200/50 space-y-12">
 
-                    {/* Header Info */}
+                    {/* Tracking ID Display */}
                     <div className="flex flex-wrap gap-8 justify-between items-center pb-10 border-b border-slate-100">
                         <div className="space-y-2 flex-1 min-w-[300px]">
-                            <label className="text-xs font-extrabold text-slate-400 uppercase tracking-widest block mb-1">Shipment Reference Name (Must be unique)</label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    required
-                                    placeholder="e.g. Q1 Global Electronics Batch"
-                                    className="w-full text-2xl font-extrabold text-slate-900 bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 px-6 focus:outline-none focus:border-primary/50 transition-all"
-                                    value={formData.shipment_name}
-                                    onChange={(e) => setFormData({ ...formData, shipment_name: e.target.value })}
-                                />
-                                <Tag className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300" size={24} />
+                            <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest block mb-1">Generated Logistics ID</p>
+                            <div className="flex items-center gap-4">
+                                <h2 className="text-4xl font-mono font-extrabold text-slate-900 tracking-tighter">
+                                    {formData.tracking_number}
+                                </h2>
+                                <button
+                                    type="button"
+                                    onClick={handleCopy}
+                                    className={`p-3 rounded-xl transition-all ${isCopying ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900'}`}
+                                >
+                                    {isCopying ? <Check size={20} /> : <Copy size={20} />}
+                                </button>
                             </div>
                         </div>
-                        <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 flex items-center gap-6 text-white shadow-2xl">
-                            <div>
-                                <p className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.2em] mb-1">Generated ID</p>
-                                <p className="text-2xl font-mono font-extrabold text-primary">{formData.tracking_number}</p>
+                        <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 flex items-center gap-6 text-white shadow-2xl">
+                            <div className="text-right">
+                                <p className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.2em] mb-1">Security Status</p>
+                                <p className="text-xl font-extrabold text-primary">System Encrypted</p>
                             </div>
-                            <Package className="text-slate-700" size={32} />
+                            <Package className="text-slate-700" size={40} />
                         </div>
                     </div>
 
@@ -128,7 +146,7 @@ export default function AddShipment() {
                                     type="text"
                                     required
                                     placeholder="e.g. Industrial Textiles, Microchips"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900 transition-all"
                                     value={formData.item_type}
                                     onChange={(e) => setFormData({ ...formData, item_type: e.target.value })}
                                 />
@@ -139,7 +157,7 @@ export default function AddShipment() {
                                     <input
                                         type="datetime-local"
                                         required
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900 transition-all"
                                         value={formData.estimated_delivery}
                                         onChange={(e) => setFormData({ ...formData, estimated_delivery: e.target.value })}
                                     />
@@ -154,7 +172,7 @@ export default function AddShipment() {
                                     required
                                     rows={3}
                                     placeholder="Provide a detailed overview of the shipment contents and special handling instructions..."
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-6 pl-12 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900 resize-none"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-6 pl-12 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900 resize-none transition-all"
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 />
@@ -176,10 +194,24 @@ export default function AddShipment() {
                                     type="text"
                                     required
                                     placeholder="Company or Individual"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900 transition-all"
                                     value={formData.sender_name}
                                     onChange={(e) => setFormData({ ...formData, sender_name: e.target.value })}
                                 />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold text-slate-500">Contact Email</label>
+                                <div className="relative">
+                                    <input
+                                        type="email"
+                                        required
+                                        placeholder="sender@example.com"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 pl-12 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900 transition-all"
+                                        value={formData.sender_email}
+                                        onChange={(e) => setFormData({ ...formData, sender_email: e.target.value })}
+                                    />
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-slate-500">Jurisdiction / Origin</label>
@@ -188,7 +220,7 @@ export default function AddShipment() {
                                         type="text"
                                         required
                                         placeholder="City, Country"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 pl-12 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 pl-12 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900 transition-all"
                                         value={formData.origin}
                                         onChange={(e) => setFormData({ ...formData, origin: e.target.value })}
                                     />
@@ -197,36 +229,74 @@ export default function AddShipment() {
                             </div>
                         </div>
 
-                        {/* Recipient Partition */}
+                        {/* Receiver Partition */}
                         <div className="space-y-6">
                             <div className="flex items-center gap-3 pb-2 border-b-2 border-slate-900/5">
                                 <User className="text-slate-900" size={20} />
-                                <h3 className="text-xl font-extrabold text-slate-900">Consignee Profile</h3>
+                                <h3 className="text-xl font-extrabold text-slate-900">Receiver Profile</h3>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-slate-500">Destination Stakeholder Name</label>
                                 <input
                                     type="text"
                                     required
-                                    placeholder="Company or Individual"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900"
+                                    placeholder="Full Name / Company"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900 transition-all"
                                     value={formData.recipient_name}
                                     onChange={(e) => setFormData({ ...formData, recipient_name: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-slate-500">Jurisdiction / Destination</label>
+                                <label className="text-sm font-bold text-slate-500">Contact Email</label>
                                 <div className="relative">
                                     <input
-                                        type="text"
+                                        type="email"
                                         required
-                                        placeholder="City, Country"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 pl-12 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900"
-                                        value={formData.destination}
-                                        onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                                        placeholder="email@example.com"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 pl-12 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900 transition-all"
+                                        value={formData.recipient_email}
+                                        onChange={(e) => setFormData({ ...formData, recipient_email: e.target.value })}
                                     />
-                                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* New Recipient Detailed Contact Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-10 border-t border-slate-100">
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 pb-2 border-b-2 border-slate-900/5">
+                                <Phone className="text-slate-900" size={20} />
+                                <h3 className="text-xl font-extrabold text-slate-900">Direct Contact</h3>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold text-slate-500">Phone Number</label>
+                                <input
+                                    type="tel"
+                                    required
+                                    placeholder="+1 (555) 000-0000"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900 transition-all"
+                                    value={formData.recipient_phone}
+                                    onChange={(e) => setFormData({ ...formData, recipient_phone: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 pb-2 border-b-2 border-slate-900/5">
+                                <MapPin className="text-slate-900" size={20} />
+                                <h3 className="text-xl font-extrabold text-slate-900">Delivery Address</h3>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold text-slate-500">Full Shipping Address</label>
+                                <textarea
+                                    required
+                                    rows={1}
+                                    placeholder="Street, Suite, ZIP, City, Country"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900 resize-none transition-all"
+                                    value={formData.recipient_address}
+                                    onChange={(e) => setFormData({ ...formData, recipient_address: e.target.value })}
+                                />
                             </div>
                         </div>
                     </div>
@@ -244,7 +314,7 @@ export default function AddShipment() {
                                     <input
                                         type="number"
                                         required
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 font-bold text-slate-900"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 font-bold text-slate-900 transition-all"
                                         value={formData.weight}
                                         onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
                                     />
@@ -254,7 +324,7 @@ export default function AddShipment() {
                                     <input
                                         type="text"
                                         placeholder="L x W x H"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 font-bold text-slate-900"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 font-bold text-slate-900 transition-all"
                                         value={formData.dimensions}
                                         onChange={(e) => setFormData({ ...formData, dimensions: e.target.value })}
                                     />
@@ -324,9 +394,11 @@ export default function AddShipment() {
                         <Link href="/admin/dashboard/shipments" className="text-slate-400 font-bold hover:text-slate-600 transition-colors">Discard Manifesto</Link>
                         <button
                             type="submit"
-                            className="bg-slate-900 hover:bg-black text-white px-12 py-5 rounded-[24px] font-extrabold transition-all shadow-2xl shadow-slate-900/30 flex items-center gap-4 text-lg"
+                            disabled={isSaving}
+                            className={`bg-slate-900 hover:bg-black text-white px-12 py-5 rounded-[24px] font-extrabold transition-all shadow-2xl shadow-slate-900/30 flex items-center gap-4 text-lg disabled:opacity-50`}
                         >
-                            <Save size={24} /> Finalize Manifest
+                            {isSaving ? <Clock className="animate-spin" size={24} /> : <Save size={24} />}
+                            {isSaving ? "Synchronizing..." : "Finalize Manifest"}
                         </button>
                     </div>
                 </div>

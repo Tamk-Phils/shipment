@@ -1,64 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Package, MapPin, Truck, Clock, AlertCircle, User, Calendar, FileText } from "lucide-react";
+import { Search, Package, MapPin, Truck, Clock, AlertCircle, User, Calendar, FileText, Mail, Phone, Copy, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-interface ShipmentUpdate {
-    status: string;
-    location: string;
-    description: string;
-    created_at: string;
-}
-
-interface Shipment {
-    tracking_number: string;
-    shipment_name?: string;
-    item_type?: string;
-    description?: string;
-    sender_name: string;
-    recipient_name: string;
-    origin: string;
-    destination: string;
-    current_status: string;
-    status?: string; // Backwards compatibility
-    weight: number;
-    dimensions: string;
-    payment_status?: string;
-    estimated_delivery?: string;
-    updates: ShipmentUpdate[];
-}
-
-// Helper to get shipments from localStorage (simulating admin data)
-const getAdminShipments = () => {
-    if (typeof window === "undefined") return [];
-    const saved = localStorage.getItem("trackflow_shipments");
-    return saved ? JSON.parse(saved) : [
-        // Default demo data if none exists
-        {
-            tracking_number: "TRK123456789",
-            sender_name: "John Logist",
-            recipient_name: "Emma Receive",
-            origin: "New York, USA",
-            destination: "London, UK",
-            current_status: "In Transit",
-            weight: 2.5,
-            dimensions: "30x20x15 cm",
-            updates: [
-                { status: "In Transit", location: "Paris, FR", description: "Package is on its way to the destination.", created_at: new Date(Date.now() - 3600000 * 2).toISOString() },
-                { status: "Processing", location: "New York, USA", description: "Package has been processed at the sorting facility.", created_at: new Date(Date.now() - 3600000 * 24).toISOString() },
-            ]
-        }
-    ];
-};
+import { supabase } from "@/lib/supabase";
+import { Shipment, ShipmentUpdate } from "@/types";
 
 export default function TrackingSearch() {
     const [trackingNumber, setTrackingNumber] = useState("");
     const [isSearching, setIsSearching] = useState(false);
     const [result, setResult] = useState<Shipment | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [isCopying, setIsCopying] = useState(false);
 
-    const handleSearch = (e: React.FormEvent) => {
+    const handleCopy = (id: string) => {
+        navigator.clipboard.writeText(id);
+        setIsCopying(true);
+        setTimeout(() => setIsCopying(false), 2000);
+    };
+
+    const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!trackingNumber.trim()) return;
 
@@ -66,21 +27,40 @@ export default function TrackingSearch() {
         setResult(null);
         setError(null);
 
-        // Simulate search delay
-        setTimeout(() => {
-            const shipments = getAdminShipments();
-            const found = shipments.find((s: Shipment & { is_deleted?: boolean }) =>
-                s.tracking_number.toLowerCase() === trackingNumber.trim().toLowerCase() &&
-                !s.is_deleted
-            );
+        try {
+            const { data, error: sbError } = await supabase
+                .from('shipments')
+                .select('*')
+                .eq('tracking_number', trackingNumber.trim())
+                .eq('is_deleted', false)
+                .single();
 
-            if (found) {
-                setResult(found);
+            if (sbError) {
+                if (sbError.code === 'PGRST116') {
+                    // Not found, try fallback for demo
+                    const saved = localStorage.getItem("trackflow_shipments");
+                    const localShipments: Shipment[] = saved ? JSON.parse(saved) : [];
+                    const found = localShipments.find(s =>
+                        s.tracking_number.toLowerCase() === trackingNumber.trim().toLowerCase() && !s.is_deleted
+                    );
+                    if (found) {
+                        setResult(found);
+                    } else {
+                        setError("This tracking number does not exist or has been archived.");
+                    }
+                } else {
+                    throw sbError;
+                }
             } else {
-                setError("This tracking number does not exist or has been archived by the administrator.");
+                setResult(data);
             }
+        } catch (err) {
+            const errorObj = err as { message?: string };
+            console.error(errorObj);
+            setError("Connectivity issue. Please verify your tracking ID or try again later.");
+        } finally {
             setIsSearching(false);
-        }, 1200);
+        }
     };
 
     return (
@@ -97,7 +77,7 @@ export default function TrackingSearch() {
                             setTrackingNumber(e.target.value);
                             if (error) setError(null);
                         }}
-                        placeholder="Enter tracking ID"
+                        placeholder="Enter tracking ID (e.g. TRK...)"
                         className="w-full bg-white border-2 border-slate-100 rounded-[24px] md:rounded-3xl py-5 md:py-6 px-8 pl-14 text-lg md:text-xl text-black focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all placeholder:text-slate-300 shadow-sm"
                     />
                 </div>
@@ -106,7 +86,7 @@ export default function TrackingSearch() {
                     disabled={isSearching}
                     className="w-full md:w-auto md:absolute md:right-3 md:top-1/2 md:-translate-y-1/2 bg-primary hover:bg-primary-dark text-white px-8 py-5 md:py-4 rounded-[20px] font-bold transition-all shadow-lg shadow-primary/20 disabled:opacity-50 whitespace-nowrap"
                 >
-                    {isSearching ? "Verifying..." : "Track Now"}
+                    {isSearching ? "Searching..." : "Track Now"}
                 </button>
             </form>
 
@@ -120,7 +100,7 @@ export default function TrackingSearch() {
                     >
                         <AlertCircle className="text-red-500 shrink-0" size={24} />
                         <div>
-                            <p className="font-extrabold text-red-900">Package Not Found</p>
+                            <p className="font-extrabold text-red-900">Tracking Error</p>
                             <p className="text-red-700 mt-1 font-medium">{error}</p>
                         </div>
                     </motion.div>
@@ -130,110 +110,135 @@ export default function TrackingSearch() {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-12 bg-white rounded-[32px] p-8 md:p-12 border border-slate-100 shadow-xl shadow-slate-200/50"
+                        className="mt-12 bg-white rounded-[40px] p-8 md:p-12 border border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden"
                     >
-                        <div className="flex flex-wrap gap-8 justify-between items-start mb-12">
+                        {/* Header Branding & ID */}
+                        <div className="flex flex-wrap gap-8 justify-between items-start mb-12 pb-12 border-b border-slate-50">
                             <div>
-                                <p className="text-slate-500 text-sm font-extrabold uppercase tracking-widest mb-1">Cargo Reference</p>
-                                <h2 className="text-3xl font-extrabold text-slate-900 mb-2">{result.shipment_name || 'General Shipment'}</h2>
-                                <div className="flex items-center gap-2 text-primary font-mono font-bold">
-                                    <Package size={16} />
-                                    {result.tracking_number}
+                                <p className="text-slate-500 text-xs font-extrabold uppercase tracking-widest mb-2">Shipment Status Dashboard</p>
+                                <div className="flex items-center gap-4">
+                                    <h2 className="text-4xl font-mono font-extrabold text-slate-900 tracking-tighter">
+                                        {result.tracking_number}
+                                    </h2>
+                                    <button
+                                        onClick={() => handleCopy(result.tracking_number)}
+                                        className={`p-2 rounded-lg transition-all ${isCopying ? 'bg-emerald-500 text-white' : 'text-slate-300 hover:text-slate-600 hover:bg-slate-100'}`}
+                                    >
+                                        {isCopying ? <Check size={18} /> : <Copy size={18} />}
+                                    </button>
                                 </div>
                             </div>
                             <div className="flex flex-col items-end gap-3">
-                                <div className="bg-primary/10 text-primary-dark px-6 py-3 rounded-full text-lg font-bold flex items-center gap-3 border border-primary/20">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
-                                    {result.current_status || result.status || "Pending"}
+                                <div className="bg-primary text-white px-8 py-4 rounded-2xl text-xl font-extrabold flex items-center gap-3 shadow-lg shadow-primary/20">
+                                    <Truck size={24} className="animate-bounce" />
+                                    {result.current_status || "Processing"}
                                 </div>
                                 {result.payment_status && (
-                                    <span className={`text-xs font-extrabold px-3 py-1 rounded-lg uppercase tracking-wider ${result.payment_status === 'Paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                                        }`}>
+                                    <span className={`text-xs font-extrabold px-4 py-1.5 rounded-full uppercase tracking-wider border ${result.payment_status === 'Paid' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
                                         Payment: {result.payment_status}
                                     </span>
                                 )}
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                            {/* Stakeholders */}
-                            <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 space-y-4">
-                                <div className="flex items-center gap-3 text-slate-900 font-extrabold pb-2 border-b border-slate-200">
-                                    <User size={18} className="text-primary" />
-                                    Stakeholders
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+                            <div className="bg-slate-50 p-8 rounded-[32px] border border-slate-100 space-y-6 lg:col-span-2">
+                                <div className="flex items-center gap-3 text-slate-900 font-extrabold pb-3 border-b border-slate-100">
+                                    <User size={20} className="text-primary" />
+                                    Stakeholder & Contact Details
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Sender</p>
-                                    <p className="font-bold text-slate-900">{result.sender_name || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Recipient</p>
-                                    <p className="font-bold text-slate-900">{result.recipient_name || 'N/A'}</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Sender</p>
+                                            <p className="font-extrabold text-slate-900">{result.sender_name || 'N/A'}</p>
+                                            <div className="flex items-center gap-2 text-slate-500 text-xs font-bold mt-1">
+                                                <Mail size={12} className="text-primary" />
+                                                {result.sender_email || 'No email provided'}
+                                            </div>
+                                        </div>
+                                        <div className="pt-4 border-t border-slate-100">
+                                            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Receiver Name</p>
+                                            <p className="text-xl font-extrabold text-slate-900">{result.recipient_name || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Receiver Contact</p>
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex items-center gap-2 text-slate-600 font-bold text-sm">
+                                                    <Mail size={14} className="text-primary" />
+                                                    {result.recipient_email || 'N/A'}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-slate-600 font-bold text-sm">
+                                                    <Phone size={14} className="text-primary" />
+                                                    {result.recipient_phone || 'N/A'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Shipping Address</p>
+                                            <div className="flex items-start gap-2 text-slate-700 font-bold bg-white p-4 rounded-2xl border border-slate-100 text-sm italic">
+                                                <MapPin size={16} className="text-primary shrink-0 mt-0.5" />
+                                                {result.recipient_address || 'TBD'}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Logistics Path */}
-                            <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 space-y-4">
-                                <div className="flex items-center gap-3 text-slate-900 font-extrabold pb-2 border-b border-slate-200">
-                                    <MapPin size={18} className="text-primary" />
-                                    Logistics Path
+                            {/* Logistics Metrics */}
+                            <div className="bg-slate-900 p-8 rounded-[32px] text-white shadow-xl space-y-6">
+                                <div className="flex items-center gap-3 font-extrabold pb-3 border-b border-white/10 opacity-80">
+                                    <Package size={20} className="text-primary" />
+                                    Shipment Specs
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Origin</p>
-                                    <p className="font-bold text-slate-900">{result.origin}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Destination</p>
-                                    <p className="font-bold text-slate-900">{result.destination}</p>
-                                </div>
-                            </div>
-
-                            {/* Cargo Details */}
-                            <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 space-y-4">
-                                <div className="flex items-center gap-3 text-slate-900 font-extrabold pb-2 border-b border-slate-200">
-                                    <Truck size={18} className="text-primary" />
-                                    Cargo Info
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Type & Metrics</p>
-                                    <p className="font-bold text-slate-900">{result.item_type || 'General Cargo'}</p>
-                                    <p className="text-xs text-slate-500 font-bold">{result.weight} kg • {result.dimensions}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Estimated Delivery</p>
-                                    <div className="flex items-center gap-2 text-primary font-bold">
-                                        <Calendar size={14} />
-                                        <span>{result.estimated_delivery ? new Date(result.estimated_delivery).toLocaleDateString() : 'TBD'}</span>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl">
+                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Weight</span>
+                                        <span className="font-extrabold text-primary">{result.weight} kg</span>
+                                    </div>
+                                    <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl">
+                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Type</span>
+                                        <span className="font-extrabold">{result.item_type || 'General'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl">
+                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">ETA</span>
+                                        <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                                            <Calendar size={14} />
+                                            <span>{result.estimated_delivery ? new Date(result.estimated_delivery).toLocaleDateString() : 'TBD'}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Description Box */}
-                        <div className="mb-12 p-8 bg-slate-900 rounded-3xl text-white shadow-xl shadow-slate-200">
+                        <div className="mb-12 p-8 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[32px]">
                             <div className="flex items-center gap-3 mb-4 opacity-50">
                                 <FileText size={18} />
-                                <span className="text-xs font-extrabold uppercase tracking-widest">Cargo Manifest Description</span>
+                                <span className="text-xs font-extrabold uppercase tracking-widest tracking-[0.2em] text-slate-500">Logistics Manifest Description</span>
                             </div>
-                            <p className="text-lg font-medium leading-relaxed italic">
-                                "{result.description || 'No detailed description provided for this manifest.'}"
+                            <p className="text-xl font-bold text-slate-700 leading-relaxed">
+                                {result.description || 'Verified cargo manifest with high-priority handling requirements.'}
                             </p>
                         </div>
 
-                        <div className="space-y-12 relative before:absolute before:left-[19px] before:top-4 before:bottom-4 before:w-[2px] before:bg-slate-100">
+                        {/* Timeline */}
+                        <div className="space-y-12 relative before:absolute before:left-[19px] before:top-4 before:bottom-4 before:w-[2.5px] before:bg-slate-100">
                             {result.updates.map((update: ShipmentUpdate, idx: number) => (
                                 <div key={idx} className="relative pl-12 group">
-                                    <div className={`absolute left-0 top-1 w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm transition-colors ${idx === 0 ? 'bg-primary text-white' : 'bg-slate-100 text-slate-300'}`}>
-                                        {idx === 0 ? <Truck size={16} /> : <Clock size={16} />}
+                                    <div className={`absolute left-0 top-1 w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm transition-all duration-300 ${idx === 0 ? 'bg-primary text-white scale-110' : 'bg-slate-200 text-slate-400'}`}>
+                                        {idx === 0 ? <Truck size={18} /> : <Clock size={16} />}
                                     </div>
-                                    <div className="bg-white group-hover:bg-slate-50/50 p-1 rounded-xl transition-colors">
+                                    <div className="bg-white group-hover:bg-slate-50/50 p-2 rounded-2xl transition-colors">
                                         <div className="flex flex-wrap items-center gap-4 mb-2">
-                                            <p className={`font-extrabold text-xl ${idx === 0 ? 'text-slate-900' : 'text-slate-600'}`}>{update.status}</p>
-                                            <span className="text-sm font-bold text-slate-400">{new Date(update.created_at).toLocaleString()}</span>
+                                            <p className={`font-extrabold text-2xl ${idx === 0 ? 'text-slate-900' : 'text-slate-600'}`}>{update.status}</p>
+                                            <span className="text-sm font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{new Date(update.created_at).toLocaleString()}</span>
                                         </div>
-                                        <p className="text-slate-700 font-bold leading-relaxed max-w-2xl">{update.description}</p>
-                                        <div className="flex items-center gap-2 text-primary font-bold text-sm mt-3">
-                                            <MapPin size={14} />
+                                        <p className="text-slate-600 font-bold text-lg leading-relaxed max-w-3xl">{update.description}</p>
+                                        <div className="flex items-center gap-2 text-primary font-extrabold text-sm mt-4">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                                             {update.location}
                                         </div>
                                     </div>

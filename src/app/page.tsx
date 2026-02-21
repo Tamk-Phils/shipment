@@ -163,7 +163,7 @@ export default function Home() {
               </h2>
               <p className="text-slate-500 text-xl font-bold leading-relaxed">
                 We combine cutting-edge technology with decade-long expertise to deliver a tracking
-                experience that's as reliable as it is precise.
+                experience that&apos;s as reliable as it is precise.
               </p>
             </motion.div>
           </div>
@@ -286,7 +286,7 @@ export default function Home() {
                 <div className="mb-4 flex text-amber-400">
                   {[1, 2, 3, 4, 5].map(s => <Star key={s} size={14} fill="currentColor" />)}
                 </div>
-                <p className="text-slate-300 italic font-medium leading-relaxed text-lg">"{t.quote}"</p>
+                <p className="text-slate-300 italic font-medium leading-relaxed text-lg">&quot;{t.quote}&quot;</p>
               </motion.div>
             ))}
           </div>
