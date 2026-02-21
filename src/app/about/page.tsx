@@ -14,7 +14,7 @@ export default function AboutPage() {
                 <h1 className="text-5xl font-extrabold mb-6">About TrackFlow</h1>
                 <div className="space-y-6 text-lg text-slate-700 leading-relaxed font-medium">
                     <p>
-                        Founded in 2024, TrackFlow was built with a single mission: to bring enterprise-grade logistics monitoring to every business, regardless of size.
+                        Founded in 2015, TrackFlow was built with a single mission: to bring enterprise-grade logistics monitoring to every business, regardless of size.
                     </p>
                 </div>
             </motion.div>

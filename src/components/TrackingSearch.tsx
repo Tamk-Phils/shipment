@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Package, MapPin, Truck, Clock, AlertCircle } from "lucide-react";
+import { Search, Package, MapPin, Truck, Clock, AlertCircle, User, Calendar, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ShipmentUpdate {
@@ -13,6 +13,9 @@ interface ShipmentUpdate {
 
 interface Shipment {
     tracking_number: string;
+    shipment_name?: string;
+    item_type?: string;
+    description?: string;
     sender_name: string;
     recipient_name: string;
     origin: string;
@@ -21,6 +24,8 @@ interface Shipment {
     status?: string; // Backwards compatibility
     weight: number;
     dimensions: string;
+    payment_status?: string;
+    estimated_delivery?: string;
     updates: ShipmentUpdate[];
 }
 
@@ -42,7 +47,6 @@ const getAdminShipments = () => {
             updates: [
                 { status: "In Transit", location: "Paris, FR", description: "Package is on its way to the destination.", created_at: new Date(Date.now() - 3600000 * 2).toISOString() },
                 { status: "Processing", location: "New York, USA", description: "Package has been processed at the sorting facility.", created_at: new Date(Date.now() - 3600000 * 24).toISOString() },
-                { status: "Pending", location: "New York, USA", description: "Shipment info received.", created_at: new Date(Date.now() - 3600000 * 48).toISOString() },
             ]
         }
     ];
@@ -65,12 +69,15 @@ export default function TrackingSearch() {
         // Simulate search delay
         setTimeout(() => {
             const shipments = getAdminShipments();
-            const found = shipments.find((s: Shipment) => s.tracking_number.toLowerCase() === trackingNumber.trim().toLowerCase());
+            const found = shipments.find((s: Shipment & { is_deleted?: boolean }) =>
+                s.tracking_number.toLowerCase() === trackingNumber.trim().toLowerCase() &&
+                !s.is_deleted
+            );
 
             if (found) {
                 setResult(found);
             } else {
-                setError("This tracking number does not exist. Only shipments created by our administrators can be tracked.");
+                setError("This tracking number does not exist or has been archived by the administrator.");
             }
             setIsSearching(false);
         }, 1200);
@@ -78,24 +85,26 @@ export default function TrackingSearch() {
 
     return (
         <div className="w-full">
-            <form onSubmit={handleSearch} className="relative group">
-                <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
-                    <Search size={22} className="text-slate-400 group-focus-within:text-primary transition-colors" />
+            <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 relative group">
+                <div className="relative flex-grow">
+                    <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+                        <Search size={22} className="text-slate-400 group-focus-within:text-primary transition-colors" />
+                    </div>
+                    <input
+                        type="text"
+                        value={trackingNumber}
+                        onChange={(e) => {
+                            setTrackingNumber(e.target.value);
+                            if (error) setError(null);
+                        }}
+                        placeholder="Enter tracking ID"
+                        className="w-full bg-white border-2 border-slate-100 rounded-[24px] md:rounded-3xl py-5 md:py-6 px-8 pl-14 text-lg md:text-xl text-black focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all placeholder:text-slate-300 shadow-sm"
+                    />
                 </div>
-                <input
-                    type="text"
-                    value={trackingNumber}
-                    onChange={(e) => {
-                        setTrackingNumber(e.target.value);
-                        if (error) setError(null);
-                    }}
-                    placeholder="Enter tracking number (e.g. TRK123456789)"
-                    className="w-full bg-white border-2 border-slate-100 rounded-3xl py-6 px-8 pl-14 text-xl text-black focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all placeholder:text-slate-300 shadow-sm"
-                />
                 <button
                     type="submit"
                     disabled={isSearching}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary-dark text-white px-8 py-4 rounded-[20px] font-bold transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+                    className="w-full md:w-auto md:absolute md:right-3 md:top-1/2 md:-translate-y-1/2 bg-primary hover:bg-primary-dark text-white px-8 py-5 md:py-4 rounded-[20px] font-bold transition-all shadow-lg shadow-primary/20 disabled:opacity-50 whitespace-nowrap"
                 >
                     {isSearching ? "Verifying..." : "Track Now"}
                 </button>
@@ -125,37 +134,90 @@ export default function TrackingSearch() {
                     >
                         <div className="flex flex-wrap gap-8 justify-between items-start mb-12">
                             <div>
-                                <p className="text-slate-500 text-sm font-extrabold uppercase tracking-widest mb-2">Shipment ID</p>
-                                <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">{result.tracking_number}</h2>
+                                <p className="text-slate-500 text-sm font-extrabold uppercase tracking-widest mb-1">Cargo Reference</p>
+                                <h2 className="text-3xl font-extrabold text-slate-900 mb-2">{result.shipment_name || 'General Shipment'}</h2>
+                                <div className="flex items-center gap-2 text-primary font-mono font-bold">
+                                    <Package size={16} />
+                                    {result.tracking_number}
+                                </div>
                             </div>
-                            <div className="bg-primary/10 text-primary-dark px-6 py-3 rounded-full text-lg font-bold flex items-center gap-3 border border-primary/20">
-                                <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
-                                {result.current_status || result.status || "Pending"}
+                            <div className="flex flex-col items-end gap-3">
+                                <div className="bg-primary/10 text-primary-dark px-6 py-3 rounded-full text-lg font-bold flex items-center gap-3 border border-primary/20">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+                                    {result.current_status || result.status || "Pending"}
+                                </div>
+                                {result.payment_status && (
+                                    <span className={`text-xs font-extrabold px-3 py-1 rounded-lg uppercase tracking-wider ${result.payment_status === 'Paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                                        }`}>
+                                        Payment: {result.payment_status}
+                                    </span>
+                                )}
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                <p className="text-slate-500 text-xs font-extrabold uppercase mb-3">Origin</p>
-                                <div className="flex items-center gap-3">
-                                    <MapPin className="text-primary" size={20} />
-                                    <span className="font-extrabold text-slate-900">{result.origin}</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                            {/* Stakeholders */}
+                            <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 space-y-4">
+                                <div className="flex items-center gap-3 text-slate-900 font-extrabold pb-2 border-b border-slate-200">
+                                    <User size={18} className="text-primary" />
+                                    Stakeholders
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Sender</p>
+                                    <p className="font-bold text-slate-900">{result.sender_name || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Recipient</p>
+                                    <p className="font-bold text-slate-900">{result.recipient_name || 'N/A'}</p>
                                 </div>
                             </div>
-                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                <p className="text-slate-500 text-xs font-extrabold uppercase mb-3">Destination</p>
-                                <div className="flex items-center gap-3">
-                                    <Package className="text-secondary" size={20} />
-                                    <span className="font-extrabold text-slate-900">{result.destination}</span>
+
+                            {/* Logistics Path */}
+                            <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 space-y-4">
+                                <div className="flex items-center gap-3 text-slate-900 font-extrabold pb-2 border-b border-slate-200">
+                                    <MapPin size={18} className="text-primary" />
+                                    Logistics Path
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Origin</p>
+                                    <p className="font-bold text-slate-900">{result.origin}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Destination</p>
+                                    <p className="font-bold text-slate-900">{result.destination}</p>
                                 </div>
                             </div>
-                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                <p className="text-slate-500 text-xs font-extrabold uppercase mb-3">Measurements</p>
-                                <div className="flex items-center gap-3">
-                                    <Truck className="text-accent" size={20} />
-                                    <span className="font-extrabold text-slate-900">{result.weight} kg • {result.dimensions}</span>
+
+                            {/* Cargo Details */}
+                            <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 space-y-4">
+                                <div className="flex items-center gap-3 text-slate-900 font-extrabold pb-2 border-b border-slate-200">
+                                    <Truck size={18} className="text-primary" />
+                                    Cargo Info
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Type & Metrics</p>
+                                    <p className="font-bold text-slate-900">{result.item_type || 'General Cargo'}</p>
+                                    <p className="text-xs text-slate-500 font-bold">{result.weight} kg • {result.dimensions}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Estimated Delivery</p>
+                                    <div className="flex items-center gap-2 text-primary font-bold">
+                                        <Calendar size={14} />
+                                        <span>{result.estimated_delivery ? new Date(result.estimated_delivery).toLocaleDateString() : 'TBD'}</span>
+                                    </div>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Description Box */}
+                        <div className="mb-12 p-8 bg-slate-900 rounded-3xl text-white shadow-xl shadow-slate-200">
+                            <div className="flex items-center gap-3 mb-4 opacity-50">
+                                <FileText size={18} />
+                                <span className="text-xs font-extrabold uppercase tracking-widest">Cargo Manifest Description</span>
+                            </div>
+                            <p className="text-lg font-medium leading-relaxed italic">
+                                "{result.description || 'No detailed description provided for this manifest.'}"
+                            </p>
                         </div>
 
                         <div className="space-y-12 relative before:absolute before:left-[19px] before:top-4 before:bottom-4 before:w-[2px] before:bg-slate-100">

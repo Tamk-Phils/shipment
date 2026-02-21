@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Package, Menu, X } from "lucide-react";
 import { useState } from "react";
 
@@ -10,11 +11,16 @@ export default function Header() {
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border bg-white/80 backdrop-blur-md">
             <div className="container mx-auto px-4 h-20 flex items-center justify-between">
-                <Link href="/" className="flex items-center gap-2 group">
-                    <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
-                        <Package size={24} />
+                <Link href="/" className="flex items-center gap-3 group">
+                    <div className="relative w-12 h-12 transition-transform group-hover:scale-105">
+                        <Image
+                            src="/logo.png"
+                            alt="TrackFlow Logo"
+                            fill
+                            className="object-contain"
+                        />
                     </div>
-                    <span className="text-2xl font-bold tracking-tight text-foreground">Track<span className="text-primary">Flow</span></span>
+                    <span className="text-2xl font-bold tracking-tight text-foreground underline-offset-4 group-hover:underline">Track<span className="text-primary">Flow</span></span>
                 </Link>
 
                 {/* Desktop Nav */}
