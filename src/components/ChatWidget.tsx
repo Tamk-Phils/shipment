@@ -118,14 +118,14 @@ export default function ChatWidget() {
     };
 
     return (
-        <div className="fixed bottom-8 right-8 z-[100]">
+        <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-[100] flex flex-col items-end">
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                        className="mb-6 w-96 h-[500px] bg-white rounded-[32px] shadow-2xl border border-slate-100 flex flex-col overflow-hidden"
+                        className="mb-4 w-[calc(100vw-2rem)] sm:w-96 h-[500px] max-h-[70vh] sm:max-h-[600px] bg-white rounded-[32px] shadow-2xl border border-slate-100 flex flex-col overflow-hidden"
                     >
                         {/* Header */}
                         <div className="bg-slate-900 p-6 flex justify-between items-center text-white">
@@ -165,8 +165,8 @@ export default function ChatWidget() {
                                         className={`flex ${msg.sender_role === 'user' ? 'justify-end' : 'justify-start'}`}
                                     >
                                         <div className={`max-w-[80%] p-4 rounded-2xl text-sm font-medium ${msg.sender_role === 'user'
-                                                ? 'bg-primary text-white rounded-tr-none'
-                                                : 'bg-slate-100 text-slate-900 rounded-tl-none'
+                                            ? 'bg-primary text-white rounded-tr-none'
+                                            : 'bg-slate-100 text-slate-900 rounded-tl-none'
                                             }`}>
                                             {msg.content}
                                         </div>
