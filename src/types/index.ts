@@ -37,8 +37,10 @@ export interface Shipment {
 export interface ChatRoom {
     id: string;
     customer_name?: string;
+    customer_email?: string;
+    user_id?: string;
     last_message?: string;
-    status: 'open' | 'closed';
+    status: 'active' | 'closed';
     created_at: string;
     updated_at: string;
 }
@@ -46,7 +48,7 @@ export interface ChatRoom {
 export interface ChatMessage {
     id: string;
     room_id: string;
-    sender_role: 'admin' | 'user';
+    sender_role: 'admin' | 'customer';
     content: string;
     created_at: string;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { MessageCircle, Send, User, Headset, Loader2, Search, Clock, ChevronRight, ArrowLeft } from "lucide-react";
+import { MessageCircle, Send, User, Headset, Loader2, Search, Clock, ChevronRight, ArrowLeft, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { ChatRoom, ChatMessage } from "@/types";
 
@@ -113,6 +113,23 @@ export default function AdminChat() {
         }
     };
 
+    const handleDeleteRoom = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (!confirm("Are you sure you want to delete this conversation? This cannot be undone.")) return;
+
+        const { error } = await supabase
+            .from('chat_rooms')
+            .delete()
+            .eq('id', id);
+
+        if (!error) {
+            if (selectedRoomId === id) setSelectedRoomId(null);
+            loadRooms();
+        } else {
+            alert("Error deleting chat: " + error.message);
+        }
+    };
+
     const selectedRoom = rooms.find(r => r.id === selectedRoomId);
 
     return (
@@ -154,15 +171,29 @@ export default function AdminChat() {
                                     : 'bg-white hover:bg-slate-100 text-slate-900 border border-slate-100'
                                     }`}
                             >
-                                <div className="flex justify-between items-start mb-2">
-                                    <p className={`font-extrabold text-sm ${selectedRoomId === room.id ? 'text-white' : 'text-slate-900'}`}>
-                                        {room.customer_name}
-                                    </p>
-                                    <div className="flex items-center gap-1.5 opacity-50">
-                                        <Clock size={12} />
-                                        <p className="text-[10px] font-bold">
-                                            {new Date(room.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                <div className="flex justify-between items-start mb-2 group/room">
+                                    <div className="flex-1 min-w-0 pr-4">
+                                        <p className={`font-extrabold text-sm truncate ${selectedRoomId === room.id ? 'text-white' : 'text-slate-900'}`}>
+                                            {room.customer_name}
                                         </p>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <div className="flex items-center gap-1.5 opacity-50">
+                                            <Clock size={12} />
+                                            <p className="text-[10px] font-bold">
+                                                {new Date(room.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={(e) => handleDeleteRoom(e, room.id)}
+                                            className={`p-2 rounded-lg transition-all ${selectedRoomId === room.id
+                                                ? 'text-white/40 hover:text-white hover:bg-white/10'
+                                                : 'text-slate-300 hover:text-red-500 hover:bg-red-50'
+                                                }`}
+                                            title="Delete Conversation"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
                                     </div>
                                 </div>
                                 <p className={`text-xs font-medium truncate ${selectedRoomId === room.id ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -193,7 +224,7 @@ export default function AdminChat() {
                                 </div>
                                 <div>
                                     <h3 className="text-md md:text-lg font-extrabold text-slate-900">{selectedRoom?.customer_name}</h3>
-                                    <p className="text-[10px] text-slate-400 font-bold tracking-tight uppercase">Room ID: {selectedRoomId.slice(0, 8)}</p>
+                                    <p className="text-[10px] text-slate-400 font-bold tracking-tight uppercase italic">{selectedRoom?.customer_email}</p>
                                 </div>
                             </div>
                         </div>

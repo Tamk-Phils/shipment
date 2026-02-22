@@ -12,12 +12,30 @@ export default function ChatWidget() {
     const [inputValue, setInputValue] = useState("");
     const [roomId, setRoomId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [user, setUser] = useState<any>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Initial session check
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null);
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+            if (!session) {
+                setRoomId(null);
+                setMessages([]);
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
 
     // Load or create room on first open
     useEffect(() => {
-        if (isOpen && !roomId) {
-            const savedRoomId = localStorage.getItem("trackflow_chat_room");
+        if (isOpen && !roomId && user) {
+            const savedRoomId = localStorage.getItem(`trackflow_chat_room_${user.id}`);
             if (savedRoomId) {
                 setRoomId(savedRoomId);
                 loadMessages(savedRoomId);
@@ -25,7 +43,7 @@ export default function ChatWidget() {
                 createRoom();
             }
         }
-    }, [isOpen]);
+    }, [isOpen, user]);
 
     // Scroll to bottom when messages change
     useEffect(() => {
@@ -60,18 +78,24 @@ export default function ChatWidget() {
     }, [roomId]);
 
     const createRoom = async () => {
+        if (!user) return;
         setIsLoading(true);
         try {
             const { data, error } = await supabase
                 .from('chat_rooms')
-                .insert([{ customer_name: 'Guest User', status: 'open' }])
+                .insert([{
+                    customer_name: user.user_metadata?.full_name || user.email,
+                    customer_email: user.email,
+                    user_id: user.id,
+                    status: 'active'
+                }])
                 .select()
                 .single();
 
             if (error) throw error;
             if (data) {
                 setRoomId(data.id);
-                localStorage.setItem("trackflow_chat_room", data.id);
+                localStorage.setItem(`trackflow_chat_room_${user.id}`, data.id);
                 // Send initial greeting
                 await sendMessage(data.id, "Hello! How can we help you today?", 'admin');
             }
@@ -100,7 +124,7 @@ export default function ChatWidget() {
 
         const content = inputValue.trim();
         setInputValue("");
-        await sendMessage(roomId, content, 'user');
+        await sendMessage(roomId, content, 'customer');
 
         // Update room's last message
         await supabase
@@ -109,13 +133,15 @@ export default function ChatWidget() {
             .eq('id', roomId);
     };
 
-    const sendMessage = async (id: string, content: string, role: 'admin' | 'user') => {
+    const sendMessage = async (id: string, content: string, role: 'admin' | 'customer') => {
         const { error } = await supabase
             .from('chat_messages')
             .insert([{ room_id: id, content, sender_role: role }]);
 
         if (error) console.error("Error sending message:", error);
     };
+
+    if (!user) return null;
 
     return (
         <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-[100] flex flex-col items-end">
@@ -162,9 +188,9 @@ export default function ChatWidget() {
                                 messages.map((msg, i) => (
                                     <div
                                         key={i}
-                                        className={`flex ${msg.sender_role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                        className={`flex ${msg.sender_role === 'customer' ? 'justify-end' : 'justify-start'}`}
                                     >
-                                        <div className={`max-w-[80%] p-4 rounded-2xl text-sm font-medium ${msg.sender_role === 'user'
+                                        <div className={`max-w-[80%] p-4 rounded-2xl text-sm font-medium ${msg.sender_role === 'customer'
                                             ? 'bg-primary text-white rounded-tr-none'
                                             : 'bg-slate-100 text-slate-900 rounded-tl-none'
                                             }`}>
