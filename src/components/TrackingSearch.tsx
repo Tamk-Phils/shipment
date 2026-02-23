@@ -196,7 +196,7 @@ export default function TrackingSearch() {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl">
                                         <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Weight</span>
-                                        <span className="font-extrabold text-primary">{result.weight} kg</span>
+                                        <span className="font-extrabold text-primary">{result.weight} lbs</span>
                                     </div>
                                     <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl">
                                         <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Type</span>

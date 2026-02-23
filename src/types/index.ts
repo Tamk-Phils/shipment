@@ -25,7 +25,7 @@ export interface Shipment {
     current_status: ShipmentStatus;
     weight?: number;
     dimensions?: string;
-    payment_method?: 'Credit Card' | 'Bank Transfer' | 'PayPal' | 'Cash';
+    payment_method?: 'Credit Card' | 'Bank Transfer' | 'PayPal' | 'Cash' | 'Chime' | 'Zelle' | 'Apple Pay';
     payment_status?: 'Paid' | 'Pending' | 'Partially Paid';
     estimated_delivery?: string;
     created_at: string;

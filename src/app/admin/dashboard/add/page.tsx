@@ -310,7 +310,7 @@ export default function AddShipment() {
                             </div>
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-500">Weight (kg)</label>
+                                    <label className="text-sm font-bold text-slate-500">Weight (lbs)</label>
                                     <input
                                         type="number"
                                         required
@@ -350,6 +350,9 @@ export default function AddShipment() {
                                             <option value="Credit Card">Credit Card</option>
                                             <option value="PayPal">PayPal</option>
                                             <option value="Cash">Cash / COD</option>
+                                            <option value="Chime">Chime</option>
+                                            <option value="Zelle">Zelle</option>
+                                            <option value="Apple Pay">Apple Pay</option>
                                         </select>
                                     </div>
                                     <div className="space-y-2">
