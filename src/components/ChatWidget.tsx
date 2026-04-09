@@ -35,7 +35,7 @@ export default function ChatWidget() {
     // Load or create room on first open
     useEffect(() => {
         if (isOpen && !roomId && user) {
-            const savedRoomId = localStorage.getItem(`trackflow_chat_room_${user.id}`);
+            const savedRoomId = localStorage.getItem(`nexustrack_chat_room_${user.id}`);
             if (savedRoomId) {
                 setRoomId(savedRoomId);
                 loadMessages(savedRoomId);
@@ -95,7 +95,7 @@ export default function ChatWidget() {
             if (error) throw error;
             if (data) {
                 setRoomId(data.id);
-                localStorage.setItem(`trackflow_chat_room_${user.id}`, data.id);
+                localStorage.setItem(`nexustrack_chat_room_${user.id}`, data.id);
                 // Send initial greeting
                 await sendMessage(data.id, "Hello! How can we help you today?", 'admin');
             }

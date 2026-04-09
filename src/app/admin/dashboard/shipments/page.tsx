@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Search, Plus, Filter, Edit2, Trash2, ArrowUpRight, Package, RefreshCw, X, Save, MapPin, Clock, Copy, Check } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { sendTrackingEmail } from "@/lib/email";
 import { Shipment, ShipmentUpdate } from "@/types";
 
 export default function ShipmentsList() {
@@ -42,7 +43,7 @@ export default function ShipmentsList() {
                 setShipments(data as Shipment[]);
             } else {
                 // Fallback to localStorage if Supabase is empty or not yet configured
-                const saved = localStorage.getItem("trackflow_shipments");
+                const saved = localStorage.getItem("nexustrack_shipments");
                 if (saved) {
                     setShipments(JSON.parse(saved) as Shipment[]);
                 }
@@ -51,7 +52,7 @@ export default function ShipmentsList() {
             const errorObj = err as { message?: string };
             console.error("Supabase Load Error:", errorObj);
             // Graceful fallback to localStorage
-            const saved = localStorage.getItem("trackflow_shipments");
+            const saved = localStorage.getItem("nexustrack_shipments");
             if (saved) setShipments(JSON.parse(saved) as Shipment[]);
         } finally {
             setIsLoading(false);
@@ -79,7 +80,7 @@ export default function ShipmentsList() {
                 return s;
             });
             setShipments(updated);
-            localStorage.setItem("trackflow_shipments", JSON.stringify(updated));
+            localStorage.setItem("nexustrack_shipments", JSON.stringify(updated));
         } catch (err) {
             console.error(err);
             alert("Failed to archive shipment. Please check your database connection.");
@@ -100,7 +101,7 @@ export default function ShipmentsList() {
                 return s;
             });
             setShipments(updated);
-            localStorage.setItem("trackflow_shipments", JSON.stringify(updated));
+            localStorage.setItem("nexustrack_shipments", JSON.stringify(updated));
             alert(`Shipment ${id} has been restored successfully.`);
         } catch (err) {
             console.error(err);
@@ -158,7 +159,16 @@ export default function ShipmentsList() {
             });
 
             setShipments(updatedShipments);
-            localStorage.setItem("trackflow_shipments", JSON.stringify(updatedShipments));
+            localStorage.setItem("nexustrack_shipments", JSON.stringify(updatedShipments));
+
+            // Trigger Automatic Email Alerts
+            if (editingShipment.sender_email) {
+                await sendTrackingEmail(editingShipment.sender_email, editingShipment.tracking_number, newUpdate.status, editingShipment.sender_name || 'Valued Customer');
+            }
+            if (editingShipment.recipient_email) {
+                await sendTrackingEmail(editingShipment.recipient_email, editingShipment.tracking_number, newUpdate.status, editingShipment.recipient_name || 'Valued Recipient');
+            }
+
             setIsModalOpen(false);
             setEditingShipment(null);
             alert(`Status for ${editingShipment.tracking_number} updated successfully!`);

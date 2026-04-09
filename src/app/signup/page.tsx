@@ -55,7 +55,7 @@ export default function SignupPage() {
                         <UserPlus size={40} />
                     </div>
                     <h1 className="text-3xl font-extrabold text-slate-900 mb-2">Create Account</h1>
-                    <p className="text-slate-500 font-bold">Join TrackFlow to access priority support and advanced tracking.</p>
+                    <p className="text-slate-500 font-bold">Join NexusTrack to access priority support and advanced tracking.</p>
                 </div>
 
                 {error && (

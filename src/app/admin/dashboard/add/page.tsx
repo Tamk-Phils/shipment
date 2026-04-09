@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Shipment } from "@/types";
 import { supabase } from "@/lib/supabase";
+import { sendTrackingEmail } from "@/lib/email";
 
 export default function AddShipment() {
     const router = useRouter();
@@ -69,12 +70,20 @@ export default function AddShipment() {
             if (sbError) throw sbError;
 
             // Optional: fallback to localStorage for redundancy or if Supabase isn't configured yet
-            const existingRaw = localStorage.getItem("trackflow_shipments");
+            const existingRaw = localStorage.getItem("nexustrack_shipments");
             const existing: any[] = existingRaw ? JSON.parse(existingRaw) : [];
             existing.push({ ...newShipment, id: Math.random().toString(36).substr(2, 9) });
-            localStorage.setItem("trackflow_shipments", JSON.stringify(existing));
+            localStorage.setItem("nexustrack_shipments", JSON.stringify(existing));
 
-            alert(`Shipment ${formData.tracking_number} registered successfully!`);
+            // Trigger Automatic Email Alerts
+            if (formData.sender_email) {
+                await sendTrackingEmail(formData.sender_email, formData.tracking_number, formData.current_status, formData.sender_name);
+            }
+            if (formData.recipient_email) {
+                await sendTrackingEmail(formData.recipient_email, formData.tracking_number, formData.current_status, formData.recipient_name);
+            }
+
+            alert(`Shipment ${formData.tracking_number} registered successfully! Alerts dispatched.`);
             router.push("/admin/dashboard/shipments");
         } catch (err: any) {
             console.error(err);

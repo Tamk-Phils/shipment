@@ -6,7 +6,7 @@ export default function PrivacyPage() {
     const sections = [
         {
             title: "Introduction",
-            content: "At TrackFlow, we take your privacy seriously. This policy describes how we collect, use, and handle your data when you use our shipment tracking services."
+            content: "At NexusTrack, we take your privacy seriously. This policy describes how we collect, use, and handle your data when you use our shipment tracking services."
         },
         {
             title: "Information We Collect",
@@ -48,7 +48,7 @@ export default function PrivacyPage() {
 
                 <div className="mt-24 p-8 bg-slate-50 rounded-3xl border border-slate-100 text-center">
                     <p className="text-slate-500">If you have any questions about this Privacy Policy, please contact us at:</p>
-                    <p className="text-primary font-bold mt-2 text-xl">privacy@trackflow.logistics</p>
+                    <p className="text-primary font-bold mt-2 text-xl">privacy@nexustrack.logistics</p>
                 </div>
             </motion.div>
         </main>

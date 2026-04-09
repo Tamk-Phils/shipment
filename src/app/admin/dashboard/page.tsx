@@ -24,7 +24,7 @@ export default function DashboardOverview() {
         if (typeof window === "undefined") return;
 
         const timer = setTimeout(() => {
-            const saved = localStorage.getItem("trackflow_shipments");
+            const saved = localStorage.getItem("nexustrack_shipments");
             const shipments: Shipment[] = saved ? JSON.parse(saved) : [];
 
             const total = shipments.length;

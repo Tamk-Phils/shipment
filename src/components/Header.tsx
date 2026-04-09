@@ -6,6 +6,7 @@ import { Package, Menu, X, LogIn, LogOut, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import Logo from "./Logo";
 
 export default function Header() {
     const [isOpen, setIsOpen] = useState(false);
@@ -35,22 +36,16 @@ export default function Header() {
         <header className="sticky top-0 z-50 w-full border-b border-border bg-white/80 backdrop-blur-md">
             <div className="container mx-auto px-4 h-20 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-3 group">
-                    <div className="relative w-12 h-12 transition-transform group-hover:scale-105">
-                        <Image
-                            src="/logo.png"
-                            alt="TrackFlow Logo"
-                            fill
-                            className="object-contain"
-                        />
-                    </div>
-                    <span className="text-2xl font-bold tracking-tight text-foreground underline-offset-4 group-hover:underline">Track<span className="text-primary">Flow</span></span>
+                    <Logo className="w-12 h-12" />
+                    <span className="text-2xl font-black tracking-tighter text-foreground group-hover:text-primary transition-colors uppercase">Track<span className="text-primary">Flow</span></span>
                 </Link>
 
                 {/* Desktop Nav */}
                 <nav className="hidden md:flex items-center gap-8">
-                    <Link href="/" className="text-sm font-semibold text-foreground/70 hover:text-primary transition-colors">Home</Link>
-                    <Link href="/about" className="text-sm font-semibold text-foreground/70 hover:text-primary transition-colors">About Us</Link>
-                    <Link href="/privacy" className="text-sm font-semibold text-foreground/70 hover:text-primary transition-colors">Privacy</Link>
+                    <Link href="/tracking" className="text-sm font-semibold text-foreground/70 hover:text-primary transition-colors">Tracking</Link>
+                    <Link href="/about" className="text-sm font-semibold text-foreground/70 hover:text-primary transition-colors">Solutions</Link>
+                    <Link href="/about" className="text-sm font-semibold text-foreground/70 hover:text-primary transition-colors">Company</Link>
+                    <Link href="/contact" className="text-sm font-semibold text-foreground/70 hover:text-primary transition-colors">Resources</Link>
 
                     {user ? (
                         <div className="flex items-center gap-4 pl-4 border-l border-slate-100">
@@ -92,6 +87,7 @@ export default function Header() {
                 <div className="md:hidden p-6 bg-white border-b border-border animate-in slide-in-from-top duration-300 shadow-xl">
                     <nav className="flex flex-col gap-4">
                         <Link href="/" onClick={() => setIsOpen(false)} className="px-4 py-2 font-bold text-slate-700 hover:text-primary">Home</Link>
+                        <Link href="/tracking" onClick={() => setIsOpen(false)} className="px-4 py-2 font-bold text-slate-700 hover:text-primary">Tracking</Link>
                         <Link href="/about" onClick={() => setIsOpen(false)} className="px-4 py-2 font-bold text-slate-700 hover:text-primary">About Us</Link>
                         <Link href="/privacy" onClick={() => setIsOpen(false)} className="px-4 py-2 font-bold text-slate-700 hover:text-primary">Privacy Policy</Link>
 
