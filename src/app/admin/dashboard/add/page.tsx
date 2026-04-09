@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Save, Package, User, MapPin, Scale, Maximize, AlertCircle, Clock, CreditCard, Tag, FileText, Calendar, Copy, Check, Mail, Phone } from "lucide-react";
+import { ArrowLeft, Save, Package, User, MapPin, Scale, AlertCircle, Clock, CreditCard, FileText, Calendar, Copy, Check, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Shipment } from "@/types";
 import { supabase } from "@/lib/supabase";
 import { notifyShipmentCreated } from "@/app/actions/email";
 
@@ -21,8 +20,7 @@ export default function AddShipment() {
         recipient_name: "",
         recipient_address: "",
         recipient_email: "",
-        recipient_phone: "",
-        origin: "",
+        origin: "Berlin, Germany",
         destination: "",
         weight: "",
         dimensions: "",
@@ -283,33 +281,6 @@ export default function AddShipment() {
                                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* New Recipient Detailed Contact Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-10 border-t border-slate-100">
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 pb-2 border-b-2 border-slate-900/5">
-                                <Phone className="text-slate-900" size={20} />
-                                <h3 className="text-xl font-extrabold text-slate-900">Direct Contact</h3>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold text-slate-500">Phone Number</label>
-                                <input
-                                    type="tel"
-                                    required
-                                    placeholder="+1 (555) 000-0000"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-6 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 font-bold text-slate-900 transition-all"
-                                    value={formData.recipient_phone}
-                                    onChange={(e) => setFormData({ ...formData, recipient_phone: e.target.value })}
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 pb-2 border-b-2 border-slate-900/5">
-                                <MapPin className="text-slate-900" size={20} />
-                                <h3 className="text-xl font-extrabold text-slate-900">Delivery Address</h3>
-                            </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-slate-500">Full Shipping Address</label>
                                 <textarea
@@ -370,12 +341,8 @@ export default function AddShipment() {
                                             onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
                                         >
                                             <option value="Bank Transfer">Bank Transfer</option>
-                                            <option value="Credit Card">Credit Card</option>
-                                            <option value="PayPal">PayPal</option>
-                                            <option value="Cash">Cash / COD</option>
-                                            <option value="Chime">Chime</option>
-                                            <option value="Zelle">Zelle</option>
-                                            <option value="Apple Pay">Apple Pay</option>
+                                            <option value="Crypto">Crypto (BTC/ETH/USDT)</option>
+                                            <option value="Gift Cards">Gift Cards (Amazon/iTunes/Steam)</option>
                                         </select>
                                     </div>
                                     <div className="space-y-2">
@@ -423,7 +390,7 @@ export default function AddShipment() {
                             disabled={isSaving}
                             className={`bg-slate-900 hover:bg-black text-white px-12 py-5 rounded-[24px] font-extrabold transition-all shadow-2xl shadow-slate-900/30 flex items-center gap-4 text-lg disabled:opacity-50`}
                         >
-                            {isSaving ? <Clock className="animate-spin" size={24} /> : <Save size={24} />}
+                            {isSaving ? <Clock className="animate-spin" size={24} /> : <Save size={14} />}
                             {isSaving ? "Synchronizing..." : "Finalize Manifest"}
                         </button>
                     </div>

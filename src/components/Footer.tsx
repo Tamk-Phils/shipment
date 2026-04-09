@@ -68,33 +68,6 @@ export default function Footer() {
                         </ul>
                     </div>
 
-                    {/* Contact Column */}
-                    <div>
-                        <h4 className="text-white font-black uppercase tracking-widest text-xs mb-10">Global HQ</h4>
-                        <div className="space-y-6">
-                            <div className="flex items-start gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-primary">
-                                    <MapPin size={18} />
-                                </div>
-                                <p className="text-slate-400 font-bold text-sm leading-relaxed">
-                                    One Logistics Plaza,<br />
-                                    Tech District, CA 94105
-                                </p>
-                            </div>
-                            <div className="flex items-start gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-primary">
-                                    <Phone size={18} />
-                                </div>
-                                <p className="text-slate-400 font-bold text-sm">+1 (800) NEXUSTRACK</p>
-                            </div>
-                            <div className="flex items-start gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-primary">
-                                    <Mail size={18} />
-                                </div>
-                                <p className="text-slate-400 font-bold text-sm">ops@nexustrack.com</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Newsletter & Bottom */}

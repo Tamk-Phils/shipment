@@ -411,14 +411,14 @@ export default function Home() {
 
             {/* Glowing Technical Hubs */}
             {[
-              { top: "32%", left: "12%", city: "New York", country: "USA" },
-              { top: "27%", left: "48%", city: "London", country: "UK" },
-              { top: "68%", left: "28%", city: "Sao Paulo", country: "Brazil" },
-              { top: "35%", left: "75%", city: "Shanghai", country: "China" },
-              { top: "78%", left: "80%", city: "Sydney", country: "Australia" },
-              { top: "42%", left: "55%", city: "Dubai", country: "UAE" },
-              { top: "72%", left: "50%", city: "Cape Town", country: "South Africa" },
-              { top: "32%", left: "82%", city: "Tokyo", country: "Japan" },
+              { top: "32%", left: "45%", city: "Berlin", country: "Germany" },
+              { top: "42%", left: "46%", city: "Munich", country: "Germany" },
+              { top: "25%", left: "43%", city: "Hamburg", country: "Germany" },
+              { top: "35%", left: "40%", city: "Frankfurt", country: "Germany" },
+              { top: "38%", left: "38%", city: "Cologne", country: "Germany" },
+              { top: "45%", left: "42%", city: "Stuttgart", country: "Germany" },
+              { top: "40%", left: "35%", city: "Dusseldorf", country: "Germany" },
+              { top: "31%", left: "47%", city: "Leipzig", country: "Germany" },
             ].map((node, i) => (
               <motion.div
                 key={i}
