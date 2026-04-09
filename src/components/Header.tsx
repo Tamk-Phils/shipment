@@ -34,6 +34,11 @@ export default function Header() {
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border bg-white/80 backdrop-blur-md">
+            {/* Professional Top Bar */}
+            <div className="bg-slate-900 text-white py-2 px-4 text-[10px] font-black uppercase tracking-[0.2em] flex justify-center items-center gap-6">
+                <span className="opacity-60 hidden sm:inline">Certified Global Logistics Intelligence</span>
+                <span className="text-primary tracking-tighter">HQ Support: +49 15510274462</span>
+            </div>
             <div className="container mx-auto px-4 h-20 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-3 group">
                     <Logo className="w-12 h-12" />

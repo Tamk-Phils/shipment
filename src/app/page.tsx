@@ -131,7 +131,13 @@ export default function Home() {
                   transition={{ duration: 1, delay: 0.4 }}
                   className="relative h-[250px] mt-24 rounded-[40px] overflow-hidden shadow-2xl border-4 border-white/50"
                 >
-                  <Image src="/images/hero-plane.png" alt="Air Freight" fill className="object-cover hover:scale-110 transition-transform duration-1000" />
+                  <Image 
+                    src="/images/hero-plane.png" 
+                    alt="NexusTrack Air Freight" 
+                    fill 
+                    priority
+                    className="object-cover hover:scale-110 transition-transform duration-1000" 
+                  />
                 </motion.div>
 
                 <motion.div 
@@ -398,7 +404,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="relative aspect-[21/9] w-full max-w-7xl mx-auto overflow-hidden bg-slate-900 rounded-[40px] border border-white/5 shadow-2xl">
+          <div className="relative aspect-square md:aspect-[21/9] w-full max-w-7xl mx-auto overflow-hidden bg-slate-900 rounded-[40px] border border-white/5 shadow-2xl">
             {/* User-Provided World Map Image */}
             <div className="absolute inset-0 z-0">
                <img 
@@ -441,7 +447,7 @@ export default function Home() {
             ))}
 
             {/* Global Connectivity Paths (Curved Lines) */}
-            <svg className="absolute inset-0 w-full h-full z-10 pointer-events-none overflow-visible">
+            <svg viewBox="0 0 1000 428" className="absolute inset-0 w-full h-full z-10 pointer-events-none overflow-visible preserve-3d">
                {[
                  { d: "M 150 160 Q 300 80 480 135", delay: 0 },
                  { d: "M 480 135 Q 600 145 750 175", delay: 2 },

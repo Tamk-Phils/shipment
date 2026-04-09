@@ -81,6 +81,7 @@ export default function Footer() {
                         </div>
                     </div>
                     <div className="text-center lg:text-right">
+                        <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-4">Official HQ: Berlin, Germany (+49 15510274462)</p>
                         <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-4">© 2026 NexusTrack Global. All rights reserved.</p>
                         <div className="flex gap-6 justify-center lg:justify-end">
                             <Link href="#" className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors">Cookie Policy</Link>
