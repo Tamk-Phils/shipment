@@ -23,6 +23,21 @@ CREATE TABLE IF NOT EXISTS shipments (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 1.5 Add new columns if the table already existed
+DO $$
+BEGIN
+    BEGIN
+        ALTER TABLE shipments ADD COLUMN latitude DECIMAL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+    BEGIN
+        ALTER TABLE shipments ADD COLUMN longitude DECIMAL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
 -- 2. Enable Row Level Security
 ALTER TABLE shipments ENABLE ROW LEVEL SECURITY;
 
