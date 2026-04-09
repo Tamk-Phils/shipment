@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { MapPin, Loader2 } from 'lucide-react';
 import debounce from 'lodash.debounce';
 
