@@ -52,7 +52,9 @@ export async function sendShipmentCreatedEmail({
                 
                 <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0;">
                     <p style="color: #94a3b8; font-size: 12px; margin: 0 0 5px; text-transform: uppercase; font-weight: bold;">Tracking Number</p>
-                    <p style="color: #2563eb; font-family: monospace; font-size: 24px; font-weight: bold; margin: 0;">${trackingNumber}</p>
+                    <p style="color: #2563eb; font-family: monospace; font-size: 24px; font-weight: bold; margin: 0;">
+                        <span style="user-select: all; -webkit-user-select: all; background-color: #e2e8f0; padding: 4px 8px; border-radius: 6px; cursor: pointer;" title="Click to copy">${trackingNumber}</span>
+                    </p>
                 </div>
 
                 <div style="margin: 25px 0;">
@@ -121,7 +123,7 @@ export async function sendShipmentUpdateEmail({
                     Hello <strong>${recipientName}</strong>,
                 </p>
                 <p style="color: #64748b; font-size: 16px; line-height: 1.6;">
-                    Your shipment <strong>${trackingNumber}</strong> has been updated.
+                    Your shipment <span style="font-family: monospace; user-select: all; -webkit-user-select: all; background-color: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: bold; color: #1e293b;">${trackingNumber}</span> has been updated.
                 </p>
                 
                 <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0;">
