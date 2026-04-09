@@ -377,8 +377,8 @@ export default function ShipmentsList() {
             {/* Status Update Modal */}
             {isModalOpen && editingShipment && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-lg rounded-[32px] shadow-2xl overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-300">
-                        <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                    <div className="bg-white w-full max-w-lg max-h-[90vh] flex flex-col rounded-[32px] shadow-2xl overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-300">
+                        <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50 shrink-0">
                             <div>
                                 <h3 className="text-xl font-extrabold text-slate-900">Push Global Update</h3>
                                 <p className="text-sm font-bold text-primary mt-1">ID: {editingShipment.tracking_number}</p>
@@ -391,7 +391,7 @@ export default function ShipmentsList() {
                             </button>
                         </div>
 
-                        <form onSubmit={handleUpdateStatus} className="p-8 space-y-6">
+                        <form onSubmit={handleUpdateStatus} className="p-8 space-y-6 overflow-y-auto">
                             <div className="space-y-2">
                                 <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest ml-1">New Milestone</label>
                                 <div className="relative">
