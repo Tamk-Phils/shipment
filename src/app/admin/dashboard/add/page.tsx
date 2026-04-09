@@ -99,8 +99,9 @@ export default function AddShipment() {
             alert(`Shipment ${formData.tracking_number} registered successfully! Alerts dispatched.`);
             router.push("/admin/dashboard/shipments");
         } catch (err: any) {
-            console.error(err);
-            setError(`Database Error: ${err.message || "Failed to save to Supabase. Ensure your environment variables are set."}`);
+            console.error("Full Supabase Error:", err);
+            const isPlaceholder = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder');
+            setError(`Database Error: ${err.message || "Failed to reach Supabase."} ${isPlaceholder ? "Critical: Environment variables are missing in production. Please check Netlify settings." : "Check your RLS policies or network."}`);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
             setIsSaving(false);
