@@ -59,7 +59,7 @@ export default function Header() {
                     <Link href="/" className="flex items-center gap-4 group">
                         <Logo className="w-12 h-12" />
                         <div className="flex flex-col">
-                            <span className="text-xl font-black tracking-tight text-[#1A1A1A] group-hover:text-primary transition-colors leading-none uppercase">NFC</span>
+                            <span className="text-xl font-black tracking-tight text-[#1A1A1A] group-hover:text-primary transition-colors leading-none uppercase">Nexus</span>
                             <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Tracking</span>
                         </div>
                     </Link>
