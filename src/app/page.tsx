@@ -130,7 +130,7 @@ export default function Home() {
 
            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
               <div className="bg-white/5 border border-white/10 p-10 rounded-sm hover:bg-white/10 transition-colors group">
-                 <div className="relative w-full h-72 rounded-sm overflow-hidden mb-8 grayscale group-hover:grayscale-0 transition-all duration-700">
+                 <div className="relative w-full h-72 rounded-sm overflow-hidden mb-8 transition-all duration-700">
                     <Image src="/images/hero-warehouse.png" alt="Operational Excellence" fill className="object-cover" />
                  </div>
                  <h3 className="text-xs font-black uppercase tracking-[0.3em] mb-4 text-primary">01. Smart Operations</h3>
@@ -138,7 +138,7 @@ export default function Home() {
               </div>
 
               <div className="bg-white/5 border border-white/10 p-10 rounded-sm hover:bg-white/10 transition-colors group">
-                 <div className="relative w-full h-72 rounded-sm overflow-hidden mb-8 grayscale group-hover:grayscale-0 transition-all duration-700">
+                 <div className="relative w-full h-72 rounded-sm overflow-hidden mb-8 transition-all duration-700">
                     <Image src="/images/tech-control.png" alt="Data Integrity" fill className="object-cover" />
                  </div>
                  <h3 className="text-xs font-black uppercase tracking-[0.3em] mb-4 text-primary">02. Verified Analytics</h3>
@@ -146,7 +146,7 @@ export default function Home() {
               </div>
 
               <div className="bg-white/5 border border-white/10 p-10 rounded-sm hover:bg-white/10 transition-colors group">
-                 <div className="relative w-full h-72 rounded-sm overflow-hidden mb-8 grayscale group-hover:grayscale-0 transition-all duration-700">
+                 <div className="relative w-full h-72 rounded-sm overflow-hidden mb-8 transition-all duration-700">
                     <Image src="/images/delivery-van.png" alt="Last Mile Security" fill className="object-cover" />
                  </div>
                  <h3 className="text-xs font-black uppercase tracking-[0.3em] mb-4 text-primary">03. Last-Mile Perfection</h3>
@@ -275,7 +275,7 @@ export default function Home() {
              </div>
              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 auto-rows-[300px]">
                  <div className="col-span-2 row-span-2 relative rounded-sm overflow-hidden group">
-                     <Image src="/images/hero-ship.png" fill className="object-cover grayscale group-hover:grayscale-0 transition-all duration-1000" alt="Gallery 1" />
+                     <Image src="/images/hero-ship.png" fill className="object-cover transition-all duration-1000" alt="Gallery 1" />
                      <div className="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors" />
                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                          <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white border-2 border-white/40 cursor-pointer hover:bg-primary hover:border-primary transition-colors">
@@ -284,10 +284,10 @@ export default function Home() {
                      </div>
                  </div>
                  <div className="relative rounded-sm overflow-hidden group">
-                     <Image src="/images/hero-warehouse.png" fill className="object-cover grayscale group-hover:grayscale-0 transition-all duration-1000" alt="Gallery 2" />
+                     <Image src="/images/hero-warehouse.png" fill className="object-cover transition-all duration-1000" alt="Gallery 2" />
                  </div>
                  <div className="relative rounded-sm overflow-hidden group">
-                     <Image src="/images/delivery-van.png" fill className="object-cover grayscale group-hover:grayscale-0 transition-all duration-1000" alt="Gallery 3" />
+                     <Image src="/images/delivery-van.png" fill className="object-cover transition-all duration-1000" alt="Gallery 3" />
                  </div>
                  <div className="col-span-2 relative rounded-sm overflow-hidden group bg-[#1A1A1A] flex items-center justify-center text-white">
                      <div className="text-center p-12 absolute inset-0 flex flex-col justify-center items-center z-10 bg-black/60 group-hover:bg-black/40 transition-colors">
