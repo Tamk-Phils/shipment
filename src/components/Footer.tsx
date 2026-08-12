@@ -23,7 +23,7 @@ export default function Footer() {
                             </div>
                         </Link>
                         <p className="text-slate-400 font-bold leading-relaxed text-sm">
-                            The official tracking gateway for Nexus. Providing secure, real-time logistics intelligence across the global financial network.
+                            The official tracking gateway for Nexus. Providing secure, real-time logistics intelligence across the global network.
                         </p>
                         <div className="flex gap-4">
                             {[Twitter, Instagram, Linkedin, Facebook].map((Icon, i) => (
@@ -36,9 +36,9 @@ export default function Footer() {
 
                     {/* Quick Links */}
                     <div>
-                        <h4 className="text-white font-black uppercase tracking-widest text-[10px] mb-8 border-b border-white/10 pb-4">Banking Services</h4>
+                        <h4 className="text-white font-black uppercase tracking-widest text-[10px] mb-8 border-b border-white/10 pb-4">Logistics Services</h4>
                         <ul className="space-y-4">
-                            {['E-Banking Portal', 'Corporate Tracking', 'Trade Finance', 'Asset Management'].map(item => (
+                            {['Global Tracking', 'Air Freight', 'Ocean Freight', 'Supply Chain'].map(item => (
                                 <li key={item}>
                                     <Link href="#" className="text-slate-400 hover:text-primary font-black uppercase tracking-widest text-[10px] transition-colors flex items-center gap-2 group">
                                         <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
