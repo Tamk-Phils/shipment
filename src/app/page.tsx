@@ -49,19 +49,27 @@ export default function Home() {
     <main className="relative bg-slate-50 min-h-screen overflow-hidden">
 
       {/* High-Contrast Hero Section */}
-      <section className="relative overflow-hidden pt-32 pb-40 lg:pt-48 lg:pb-64 bg-white">
-        {/* Subtle Branding Accent */}
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-[#1A1A1A] hidden lg:block skew-x-[-12deg] translate-x-32" />
+      <section className="relative overflow-hidden pt-32 pb-40 lg:pt-48 lg:pb-64">
+        {/* Full Background Image */}
+        <div className="absolute inset-0 z-0">
+           <Image 
+             src="/images/hero-ship.png" 
+             alt="Hero Background" 
+             fill 
+             className="object-cover"
+             priority
+           />
+        </div>
         
         <div className="container mx-auto px-6 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+          <div className="max-w-3xl">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
               className="space-y-12"
             >
-              <div className="inline-flex items-center gap-3 bg-primary/5 text-primary px-5 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-[0.25em] border-l-4 border-primary">
+              <div className="inline-flex items-center gap-3 text-primary px-0 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-[0.25em]">
                 <ShieldCheck size={14} />
                 <span>Institutional Grade Logistics</span>
               </div>
@@ -71,7 +79,7 @@ export default function Home() {
                 <span className="text-primary italic">Intelligence.</span>
               </h1>
               
-              <p className="text-xl text-slate-500 leading-relaxed max-w-xl font-bold uppercase tracking-tight">
+              <p className="text-xl text-[#1A1A1A] leading-relaxed max-w-xl font-extrabold uppercase tracking-tight">
                 The official tracking infrastructure for National Financial Credit. Absolute visibility for high-value transits across 180+ global nodes.
               </p>
 
@@ -79,80 +87,22 @@ export default function Home() {
                 <Link href="/tracking" className="inline-flex items-center gap-4 bg-[#1A1A1A] text-white px-12 py-6 rounded-sm font-black text-xs uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-2xl shadow-black/20 group">
                   Start Tracking <MoveRight size={18} className="group-hover:translate-x-2 transition-transform" />
                 </Link>
-                <Link href="/login" className="inline-flex items-center gap-4 bg-white text-[#1A1A1A] px-12 py-6 rounded-sm font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-50 transition-all border-2 border-[#1A1A1A] shadow-xl">
+                <Link href="/login" className="inline-flex items-center gap-4 bg-transparent text-[#1A1A1A] px-12 py-6 rounded-sm font-black text-xs uppercase tracking-[0.2em] hover:bg-[#1A1A1A] hover:text-white transition-all border-2 border-[#1A1A1A] shadow-xl">
                   Client Portal
                 </Link>
               </div>
 
-              <div className="flex gap-12 pt-10 border-t border-slate-100 items-center">
+              <div className="flex gap-12 pt-10 items-center">
                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Network Nodes</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A] mb-2">Network Nodes</p>
                     <p className="text-3xl font-black text-[#1A1A1A]">1,240+</p>
                  </div>
                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Daily Events</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#1A1A1A] mb-2">Daily Events</p>
                     <p className="text-3xl font-black text-[#1A1A1A]">42.5M</p>
                  </div>
               </div>
             </motion.div>
-
-            <div className="relative h-[700px] w-full hidden lg:block">
-              {/* Massive Image Showcase */}
-              <div className="absolute inset-0 bg-[#1A1A1A] rounded-sm overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]">
-                 <Image 
-                   src="/images/hero-ship.png" 
-                   alt="NFC Global Logistics" 
-                   fill 
-                   className="object-cover opacity-80 mix-blend-luminosity grayscale hover:grayscale-0 transition-all duration-1000" 
-                 />
-                 <div className="absolute inset-0 bg-gradient-to-tr from-[#1A1A1A] via-transparent to-transparent opacity-60" />
-              </div>
-              
-              {/* Floating Performance Metric */}
-              <motion.div
-                initial={{ x: 50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="absolute -bottom-10 -left-20 bg-primary p-10 rounded-sm shadow-3xl z-20 text-white min-w-[300px]"
-              >
-                <div className="flex items-center gap-6 mb-4">
-                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                        <TrendingUp size={32} />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">Latency Score</p>
-                        <p className="text-4xl font-black tracking-tighter">0.42ms</p>
-                    </div>
-                </div>
-                <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
-                    <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: "94%" }}
-                        transition={{ duration: 1.5, delay: 1 }}
-                        className="h-full bg-white" 
-                    />
-                </div>
-              </motion.div>
-
-              {/* Data Stream Overlay */}
-              <div className="absolute top-10 -right-10 bg-white p-8 rounded-sm shadow-2xl border border-slate-100 z-20 flex flex-col gap-4 max-w-[200px]">
-                 <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Live Stream Alpha</span>
-                 </div>
-                 <div className="space-y-2">
-                    {[1,2,3].map(i => (
-                        <div key={i} className="h-1 bg-slate-100 rounded-full overflow-hidden">
-                            <motion.div 
-                                animate={{ x: ["-100%", "100%"] }}
-                                transition={{ duration: 2 + i, repeat: Infinity, ease: "linear" }}
-                                className="w-1/2 h-full bg-slate-300" 
-                            />
-                        </div>
-                    ))}
-                 </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
