@@ -18,12 +18,12 @@ export default function Footer() {
                         <Link href="/" className="flex items-center gap-4 group">
                             <Logo className="w-12 h-12" />
                             <div className="flex flex-col">
-                                <span className="text-xl font-black text-white tracking-tight leading-none uppercase">NFC</span>
+                                <span className="text-xl font-black text-white tracking-tight leading-none uppercase">NEXUS</span>
                                 <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Tracking</span>
                             </div>
                         </Link>
                         <p className="text-slate-400 font-bold leading-relaxed text-sm">
-                            The official tracking gateway for National Financial Credit. Providing secure, real-time logistics intelligence across the global financial network.
+                            The official tracking gateway for Nexus. Providing secure, real-time logistics intelligence across the global financial network.
                         </p>
                         <div className="flex gap-4">
                             {[Twitter, Instagram, Linkedin, Facebook].map((Icon, i) => (
@@ -72,23 +72,13 @@ export default function Footer() {
 
                     {/* Contact Info */}
                     <div>
-                        <h4 className="text-white font-black uppercase tracking-widest text-[10px] mb-8 border-b border-white/10 pb-4">Headquarters</h4>
+                        <h4 className="text-white font-black uppercase tracking-widest text-[10px] mb-8 border-b border-white/10 pb-4">Contact</h4>
                         <div className="space-y-6">
-                            <div className="flex items-start gap-4">
-                                <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                                    <MapPin size={16} />
-                                </div>
-                                <p className="text-slate-400 text-xs font-bold leading-relaxed uppercase tracking-wider">
-                                    Avenue Charles de Gaulle,<br />
-                                    B.P. 11834, Douala,<br />
-                                    Cameroon
-                                </p>
-                            </div>
                             <div className="flex items-center gap-4">
                                 <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary shrink-0">
                                     <Phone size={16} />
                                 </div>
-                                <p className="text-slate-400 text-xs font-black uppercase tracking-widest">+237 233 43 12 12</p>
+                                <p className="text-slate-400 text-xs font-black uppercase tracking-widest">+1 (205) 376 5055</p>
                             </div>
                         </div>
                     </div>
@@ -105,7 +95,7 @@ export default function Footer() {
                         </div>
                     </div>
                     <div className="text-center lg:text-right">
-                        <p className="text-slate-600 font-black text-[9px] uppercase tracking-[0.3em] mb-4">© 2026 NATIONAL FINANCIAL CREDIT BANK PLC. ALL RIGHTS RESERVED.</p>
+                        <p className="text-slate-600 font-black text-[9px] uppercase tracking-[0.3em] mb-4">© 2026 NEXUS. ALL RIGHTS RESERVED.</p>
                         <div className="flex gap-6 justify-center lg:justify-end">
                             <Link href="#" className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors">Privacy Policy</Link>
                             <Link href="#" className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors">Legal Notice</Link>
