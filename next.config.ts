@@ -5,9 +5,7 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   transpilePackages: ["leaflet", "react-leaflet"],
-  experimental: {
-    serverComponentsExternalPackages: ["nodemailer"],
-  },
+  serverExternalPackages: ["nodemailer"],
 };
 
 export default nextConfig;
