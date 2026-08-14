@@ -204,9 +204,9 @@ export default function ShipmentsList() {
             setIsModalOpen(false);
             setEditingShipment(null);
             alert(`Status for ${editingShipment.tracking_number} updated successfully!`);
-        } catch (err) {
-            console.error(err);
-            alert("Failed to update status.");
+        } catch (err: any) {
+            console.error("Update Error:", err);
+            alert(`Failed to update status. Reason: ${err?.message || JSON.stringify(err)}`);
         }
     };
 
@@ -415,7 +415,7 @@ export default function ShipmentsList() {
                             <MapPicker 
                                 initialLat={newUpdate.lat} 
                                 initialLng={newUpdate.lng} 
-                                onChange={(lat, lng) => setNewUpdate({ ...newUpdate, lat, lng })} 
+                                onChange={(lat, lng, address) => setNewUpdate({ ...newUpdate, lat, lng, location: address || newUpdate.location })} 
                             />
 
                             <div className="space-y-2">
