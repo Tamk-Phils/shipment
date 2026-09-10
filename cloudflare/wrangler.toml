@@ -1,0 +1,8 @@
+name = "global-nexus-inbound-email"
+main = "email-routing-worker.ts"
+compatibility_date = "2026-09-10"
+
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+INBOUND_WEBHOOK_URL = "https://www.globalnexustracker.com/api/email/inbound"

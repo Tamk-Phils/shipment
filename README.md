@@ -20,6 +20,30 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Email Setup
+
+Outbound email is handled by Resend, not SpaceMail. Cloudflare is only used for DNS and routing.
+
+Required environment values:
+
+- `FROM_EMAIL` and `FROM_NAME` for the sender identity
+- `RESEND_API_KEY` for outbound delivery
+- `ADMIN_REPLY_TO_EMAIL` if you want replies from users to land in a dedicated admin inbox
+- `EMAIL_INBOUND_WEBHOOK_SECRET` for the inbound email webhook
+
+Admin users can open the dashboard user directory, send a message directly to a user, and the reply path will return to the configured admin inbox.
+
+If you want user replies to appear inside the dashboard, connect Cloudflare Email Routing to a Worker that forwards replies to `/api/email/inbound`.
+
+Cloudflare setup:
+
+1. Route `support@globalnexustracker.com` through Cloudflare Email Routing.
+2. Point the routing rule to a Worker using [cloudflare/email-routing-worker.ts](cloudflare/email-routing-worker.ts).
+3. Set `INBOUND_WEBHOOK_URL` to `https://www.globalnexustracker.com/api/email/inbound`.
+4. Set `INBOUND_WEBHOOK_SECRET` in both the Worker and your app environment.
+
+The worker extracts the reply thread from the address plus-tag and posts the inbound reply into the portal inbox tables.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

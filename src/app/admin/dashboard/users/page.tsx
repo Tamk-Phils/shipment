@@ -1,25 +1,93 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Users, UserPlus, Search, Filter, MoreVertical, Mail, Shield, ShieldCheck } from "lucide-react";
+import { Users, UserPlus, Search, Filter, MoreVertical, Mail, Shield, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
+import { notifyDirectEmail } from "@/app/actions/email";
 
 export default function UserManagement() {
-    const [users, setUsers] = useState([
+    const [users] = useState([
         { id: 1, name: "Admin User", email: "admin@nexustrack.com", role: "Super Admin", status: "Active", lastLogin: "2 mins ago" },
         { id: 2, name: "Sarah Jenkins", email: "s.jenkins@swift.com", role: "Customer", status: "Active", lastLogin: "1 hour ago" },
         { id: 3, name: "Robert Chen", email: "r.chen@globalport.com", role: "Manager", status: "Inactive", lastLogin: "3 days ago" },
         { id: 4, name: "Michael Torres", email: "m.torres@apex.com", role: "Customer", status: "Active", lastLogin: "5 hours ago" },
     ]);
+    const [composeTarget, setComposeTarget] = useState<{ name: string; email: string } | null>(null);
+    const [recipientName, setRecipientName] = useState("");
+    const [recipientEmail, setRecipientEmail] = useState("");
+    const [subject, setSubject] = useState("");
+    const [message, setMessage] = useState("");
+    const [isSending, setIsSending] = useState(false);
+    const [sendResult, setSendResult] = useState<string | null>(null);
+
+    const openComposer = (name: string, email: string) => {
+        setComposeTarget({ name, email });
+        setRecipientName(name);
+        setRecipientEmail(email);
+        setSubject(`Message from Global Nexus Tracker`);
+        setMessage("");
+        setSendResult(null);
+    };
+
+    const openBlankComposer = () => {
+        setComposeTarget({ name: "", email: "" });
+        setRecipientName("");
+        setRecipientEmail("");
+        setSubject(`Message from Global Nexus Tracker`);
+        setMessage("");
+        setSendResult(null);
+    };
+
+    const closeComposer = () => {
+        if (isSending) return;
+        setComposeTarget(null);
+        setRecipientName("");
+        setRecipientEmail("");
+        setSubject("");
+        setMessage("");
+        setSendResult(null);
+    };
+
+    const handleSendEmail = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!recipientEmail.trim() || !subject.trim() || !message.trim()) return;
+
+        setIsSending(true);
+        setSendResult(null);
+
+        try {
+            const result = await notifyDirectEmail({
+                to: recipientEmail.trim(),
+                subject: subject.trim(),
+                message: message.trim(),
+                recipientName: recipientName.trim() || undefined,
+                senderName: "Global Nexus Tracker Admin"
+            });
+
+            if (!result.success) {
+                throw new Error(typeof result.error === "string" ? result.error : "Failed to send email");
+            }
+
+            setSendResult(`Sent to ${recipientName || recipientEmail} at ${recipientEmail}`);
+            setMessage("");
+        } catch (error: unknown) {
+            setSendResult(error instanceof Error ? error.message : "Failed to send email");
+        } finally {
+            setIsSending(false);
+        }
+    };
 
     return (
-        <div className="space-y-10">
+        <div className="space-y-10 relative">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
                     <h1 className="text-4xl font-extrabold text-slate-900 mb-2">User Directory</h1>
                     <p className="text-slate-600 text-lg font-bold">Manage administrative access and customer accounts.</p>
                 </div>
-                <button className="bg-primary hover:bg-primary-dark text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all">
+                <button
+                    onClick={openBlankComposer}
+                    className="bg-primary hover:bg-primary-dark text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all"
+                >
                     <UserPlus size={20} /> Add New User
                 </button>
             </div>
@@ -99,9 +167,18 @@ export default function UserManagement() {
                                         <p className="text-sm font-bold text-slate-500">{user.lastLogin}</p>
                                     </td>
                                     <td className="px-8 py-6 text-right">
-                                        <button className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
-                                            <MoreVertical size={20} />
-                                        </button>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => openComposer(user.name, user.email)}
+                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition-all"
+                                            >
+                                                <Mail size={16} />
+                                                Email
+                                            </button>
+                                            <button className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                                                <MoreVertical size={20} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -109,6 +186,99 @@ export default function UserManagement() {
                     </table>
                 </div>
             </div>
+
+            {composeTarget && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-950/50 backdrop-blur-sm px-4">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        className="w-full max-w-2xl bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden"
+                    >
+                        <div className="p-8 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50">
+                            <div>
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Direct Email</p>
+                                <h2 className="text-3xl font-extrabold text-slate-900">
+                                    {composeTarget.name ? `Message ${composeTarget.name}` : "Message recipient"}
+                                </h2>
+                                {composeTarget.email && <p className="text-slate-500 font-medium mt-2">{composeTarget.email}</p>}
+                            </div>
+                            <button onClick={closeComposer} className="p-2 rounded-xl hover:bg-slate-200 text-slate-500 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSendEmail} className="p-8 space-y-6">
+                            <div>
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Recipient email</label>
+                                <input
+                                    type="email"
+                                    value={recipientEmail}
+                                    onChange={(e) => setRecipientEmail(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 font-semibold text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                    placeholder="recipient@example.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Recipient name</label>
+                                <input
+                                    type="text"
+                                    value={recipientName}
+                                    onChange={(e) => setRecipientName(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 font-semibold text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                    placeholder="Optional display name"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Subject</label>
+                                <input
+                                    type="text"
+                                    value={subject}
+                                    onChange={(e) => setSubject(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 font-semibold text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                    placeholder="Enter email subject"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Message</label>
+                                <textarea
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    rows={7}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 font-semibold text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                                    placeholder="Write your message here"
+                                />
+                            </div>
+
+                            {sendResult && (
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">
+                                    {sendResult}
+                                </div>
+                            )}
+
+                            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-500">
+                                Sender: support@globalnexustracker.com
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={closeComposer}
+                                    className="px-5 py-3 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSending}
+                                    className="px-6 py-3 rounded-2xl bg-primary text-white font-bold hover:bg-primary-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    {isSending ? "Sending..." : "Send Email"}
+                                </button>
+                            </div>
+                        </form>
+                    </motion.div>
+                </div>
+            )}
         </div>
     );
 }

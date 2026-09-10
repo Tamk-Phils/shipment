@@ -46,10 +46,41 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 3b. Create the email_threads table for direct email conversations
+CREATE TABLE IF NOT EXISTS email_threads (
+    id UUID PRIMARY KEY,
+    recipient_name TEXT,
+    recipient_email TEXT NOT NULL,
+    sender_name TEXT,
+    sender_email TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    reply_to TEXT NOT NULL,
+    last_message TEXT,
+    status TEXT DEFAULT 'open',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3c. Create the email_messages table
+CREATE TABLE IF NOT EXISTS email_messages (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    thread_id UUID REFERENCES email_threads(id) ON DELETE CASCADE,
+    direction TEXT NOT NULL,
+    sender_name TEXT,
+    sender_email TEXT,
+    recipient_name TEXT,
+    recipient_email TEXT,
+    subject TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 4. Enable Row Level Security (RLS)
 ALTER TABLE shipments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE email_threads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE email_messages ENABLE ROW LEVEL SECURITY;
 
 -- 5. Policies for shipments
 DROP POLICY IF EXISTS "Allow public read access" ON shipments;
@@ -78,9 +109,31 @@ CREATE POLICY "Allow public read access" ON chat_messages FOR SELECT TO public U
 DROP POLICY IF EXISTS "Allow public insert access" ON chat_messages;
 CREATE POLICY "Allow public insert access" ON chat_messages FOR INSERT TO public WITH CHECK (true);
 
--- 8. Enable real-time for chat_messages (needed for the chat widget to work)
+-- 8. Policies for email_threads
+DROP POLICY IF EXISTS "Allow public read access" ON email_threads;
+CREATE POLICY "Allow public read access" ON email_threads FOR SELECT TO public USING (true);
+
+DROP POLICY IF EXISTS "Allow public insert access" ON email_threads;
+CREATE POLICY "Allow public insert access" ON email_threads FOR INSERT TO public WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public update access" ON email_threads;
+CREATE POLICY "Allow public update access" ON email_threads FOR UPDATE TO public USING (true) WITH CHECK (true);
+
+-- 9. Policies for email_messages
+DROP POLICY IF EXISTS "Allow public read access" ON email_messages;
+CREATE POLICY "Allow public read access" ON email_messages FOR SELECT TO public USING (true);
+
+DROP POLICY IF EXISTS "Allow public insert access" ON email_messages;
+CREATE POLICY "Allow public insert access" ON email_messages FOR INSERT TO public WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public update access" ON email_messages;
+CREATE POLICY "Allow public update access" ON email_messages FOR UPDATE TO public USING (true) WITH CHECK (true);
+
+-- 10. Enable real-time for chat_messages and email tables
 BEGIN;
   DROP PUBLICATION IF EXISTS supabase_realtime;
   CREATE PUBLICATION supabase_realtime;
 COMMIT;
 ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE email_threads;
+ALTER PUBLICATION supabase_realtime ADD TABLE email_messages;

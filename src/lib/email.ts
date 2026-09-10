@@ -22,7 +22,95 @@ interface UpdateShipmentParams extends BaseEmailParams {
     description: string;
 }
 
+interface DirectEmailParams {
+    to: string;
+    subject: string;
+    message: string;
+    recipientName?: string;
+    senderName?: string;
+    replyTo?: string;
+}
+
 const getTrackingLink = () => `${process.env.NEXT_PUBLIC_APP_URL || "https://nexustrack.com"}/tracking`;
+
+const getFromAddress = () => `"${process.env.FROM_NAME || "Global Nexus Tracker"}" <${process.env.FROM_EMAIL || "support@globalnexustrack.com"}>`;
+
+const getReplyToAddress = () => process.env.ADMIN_REPLY_TO_EMAIL || process.env.FROM_EMAIL || "support@globalnexustrack.com";
+
+const getReplyToDomain = () => {
+    const fromEmail = process.env.FROM_EMAIL || "support@globalnexustrack.com";
+    const parts = fromEmail.split("@");
+    return parts.length === 2 ? { localPart: parts[0], domain: parts[1] } : { localPart: "support", domain: "globalnexustracker.com" };
+};
+
+export const buildThreadReplyAddress = (threadId: string) => {
+    const { localPart, domain } = getReplyToDomain();
+    return `${localPart}+${threadId}@${domain}`;
+};
+
+export const extractThreadIdFromReplyAddress = (replyAddress: string) => {
+    const match = replyAddress.match(/^[^+@]+\+([a-f0-9-]{8,})@/i);
+    return match?.[1] || null;
+};
+
+const getBaseEmailShell = (title: string, body: string) => `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+        <div style="background-color: #2563eb; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0;">Global Nexus Tracker</h1>
+            <p style="color: #bfdbfe; margin: 5px 0 0;">${title}</p>
+        </div>
+        <div style="padding: 30px; background-color: white;">${body}</div>
+        <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 12px;">
+            <p>&copy; 2026 Global Nexus Tracker Logistics Solutions. All rights reserved.</p>
+        </div>
+    </div>
+`;
+
+export async function sendDirectEmail({
+    to,
+    subject,
+    message,
+    recipientName,
+    senderName,
+    replyTo
+}: DirectEmailParams) {
+    const htmlContent = getBaseEmailShell(
+        "Direct Message",
+        `
+            <h2 style="color: #1e293b;">New message from ${senderName || "Global Nexus Tracker"}</h2>
+            <p style="color: #64748b; font-size: 16px; line-height: 1.6;">
+                Hello <strong>${recipientName || "there"}</strong>,
+            </p>
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 24px 0; color: #334155; font-size: 16px; line-height: 1.7; white-space: pre-wrap;">
+                ${message}
+            </div>
+            <p style="color: #64748b; font-size: 14px; line-height: 1.6;">
+                This message was sent directly from the admin dashboard.
+            </p>
+        `
+    );
+
+    try {
+        const { error } = await resend.emails.send({
+            from: getFromAddress(),
+            replyTo: replyTo || getReplyToAddress(),
+            to: [to],
+            subject,
+            html: htmlContent,
+            text: message,
+        });
+
+        if (error) {
+            console.error("Resend API Error:", error);
+            return { success: false, error };
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error("Critical Email Error:", error);
+        return { success: false, error };
+    }
+}
 
 export async function sendShipmentCreatedEmail({
     to,
@@ -35,56 +123,49 @@ export async function sendShipmentCreatedEmail({
 }: NewShipmentParams) {
     const trackingLink = getTrackingLink();
 
-    const htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <div style="background-color: #2563eb; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-                <h1 style="color: white; margin: 0;">Global Nexus Tracker</h1>
-                <p style="color: #bfdbfe; margin: 5px 0 0;">Global Logistics Intelligence</p>
-            </div>
-            <div style="padding: 30px; background-color: white;">
-                <h2 style="color: #1e293b;">Shipment Registered Successfully</h2>
-                <p style="color: #64748b; font-size: 16px; line-height: 1.6;">
-                    Hello <strong>${recipientName}</strong>,
+    const htmlContent = getBaseEmailShell(
+        "Global Logistics Intelligence",
+        `
+            <h2 style="color: #1e293b;">Shipment Registered Successfully</h2>
+            <p style="color: #64748b; font-size: 16px; line-height: 1.6;">
+                Hello <strong>${recipientName}</strong>,
+            </p>
+            <p style="color: #64748b; font-size: 16px; line-height: 1.6;">
+                A new shipment has been registered for you by <strong>${senderName}</strong>. You can now track your parcel in real-time.
+            </p>
+            
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                <p style="color: #94a3b8; font-size: 12px; margin: 0 0 5px; text-transform: uppercase; font-weight: bold;">Tracking Number</p>
+                <p style="color: #2563eb; font-family: monospace; font-size: 24px; font-weight: bold; margin: 0;">
+                    <span style="user-select: all; -webkit-user-select: all; background-color: #e2e8f0; padding: 4px 8px; border-radius: 6px; cursor: pointer;" title="Click to copy">${trackingNumber}</span>
                 </p>
-                <p style="color: #64748b; font-size: 16px; line-height: 1.6;">
-                    A new shipment has been registered for you by <strong>${senderName}</strong>. You can now track your parcel in real-time.
-                </p>
-                
-                <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0;">
-                    <p style="color: #94a3b8; font-size: 12px; margin: 0 0 5px; text-transform: uppercase; font-weight: bold;">Tracking Number</p>
-                    <p style="color: #2563eb; font-family: monospace; font-size: 24px; font-weight: bold; margin: 0;">
-                        <span style="user-select: all; -webkit-user-select: all; background-color: #e2e8f0; padding: 4px 8px; border-radius: 6px; cursor: pointer;" title="Click to copy">${trackingNumber}</span>
-                    </p>
-                </div>
-
-                <div style="margin: 25px 0;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                            <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9;">
-                                <span style="color: #94a3b8; font-size: 12px; text-transform: uppercase;">From</span><br/>
-                                <strong style="color: #1e293b;">${origin}</strong>
-                            </td>
-                            <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; text-align: right;">
-                                <span style="color: #94a3b8; font-size: 12px; text-transform: uppercase;">To</span><br/>
-                                <strong style="color: #1e293b;">${destination}</strong>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-
-                <div style="text-align: center; margin-top: 40px;">
-                    <a href="${trackingLink}" style="background-color: #2563eb; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Track Your Shipment</a>
-                </div>
             </div>
-            <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 12px;">
-                <p>&copy; 2026 Global Nexus Tracker Logistics Solutions. All rights reserved.</p>
+
+            <div style="margin: 25px 0;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9;">
+                            <span style="color: #94a3b8; font-size: 12px; text-transform: uppercase;">From</span><br/>
+                            <strong style="color: #1e293b;">${origin}</strong>
+                        </td>
+                        <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; text-align: right;">
+                            <span style="color: #94a3b8; font-size: 12px; text-transform: uppercase;">To</span><br/>
+                            <strong style="color: #1e293b;">${destination}</strong>
+                        </td>
+                    </tr>
+                </table>
             </div>
-        </div>
-    `;
+
+            <div style="text-align: center; margin-top: 40px;">
+                <a href="${trackingLink}" style="background-color: #2563eb; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Track Your Shipment</a>
+            </div>
+        `
+    );
 
     try {
         const { error } = await resend.emails.send({
-            from: `"${process.env.FROM_NAME || "Global Nexus Tracker"}" <${process.env.FROM_EMAIL || "support@globalnexustracker.com"}>`,
+            from: getFromAddress(),
+            replyTo: getReplyToAddress(),
             to: [to],
             subject,
             html: htmlContent,
@@ -111,49 +192,42 @@ export async function sendShipmentUpdateEmail({
 }: UpdateShipmentParams) {
     const trackingLink = getTrackingLink();
 
-    const htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <div style="background-color: #2563eb; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-                <h1 style="color: white; margin: 0;">Global Nexus Tracker</h1>
-                <p style="color: #bfdbfe; margin: 5px 0 0;">Global Logistics Intelligence</p>
-            </div>
-            <div style="padding: 30px; background-color: white;">
-                <h2 style="color: #1e293b;">Shipment Status Update</h2>
-                <p style="color: #64748b; font-size: 16px; line-height: 1.6;">
-                    Hello <strong>${recipientName}</strong>,
-                </p>
-                <p style="color: #64748b; font-size: 16px; line-height: 1.6;">
-                    Your shipment <span style="font-family: monospace; user-select: all; -webkit-user-select: all; background-color: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: bold; color: #1e293b;">${trackingNumber}</span> has been updated.
-                </p>
-                
-                <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0;">
-                    <div style="margin-bottom: 15px;">
-                        <p style="color: #94a3b8; font-size: 12px; margin: 0 0 5px; text-transform: uppercase; font-weight: bold;">New Status</p>
-                        <p style="color: #2563eb; font-size: 18px; font-weight: bold; margin: 0;">${newStatus}</p>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <p style="color: #94a3b8; font-size: 12px; margin: 0 0 5px; text-transform: uppercase; font-weight: bold;">Current Location</p>
-                        <p style="color: #1e293b; font-size: 16px; margin: 0;">${location || "In Transit"}</p>
-                    </div>
-                    <div>
-                        <p style="color: #94a3b8; font-size: 12px; margin: 0 0 5px; text-transform: uppercase; font-weight: bold;">Details</p>
-                        <p style="color: #64748b; font-size: 14px; margin: 0;">${description || "No additional details provided."}</p>
-                    </div>
+    const htmlContent = getBaseEmailShell(
+        "Global Logistics Intelligence",
+        `
+            <h2 style="color: #1e293b;">Shipment Status Update</h2>
+            <p style="color: #64748b; font-size: 16px; line-height: 1.6;">
+                Hello <strong>${recipientName}</strong>,
+            </p>
+            <p style="color: #64748b; font-size: 16px; line-height: 1.6;">
+                Your shipment <span style="font-family: monospace; user-select: all; -webkit-user-select: all; background-color: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: bold; color: #1e293b;">${trackingNumber}</span> has been updated.
+            </p>
+            
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                <div style="margin-bottom: 15px;">
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0 0 5px; text-transform: uppercase; font-weight: bold;">New Status</p>
+                    <p style="color: #2563eb; font-size: 18px; font-weight: bold; margin: 0;">${newStatus}</p>
                 </div>
+                <div style="margin-bottom: 15px;">
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0 0 5px; text-transform: uppercase; font-weight: bold;">Current Location</p>
+                    <p style="color: #1e293b; font-size: 16px; margin: 0;">${location || "In Transit"}</p>
+                </div>
+                <div>
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0 0 5px; text-transform: uppercase; font-weight: bold;">Details</p>
+                    <p style="color: #64748b; font-size: 14px; margin: 0;">${description || "No additional details provided."}</p>
+                </div>
+            </div>
 
-                <div style="text-align: center; margin-top: 40px;">
-                    <a href="${trackingLink}" style="background-color: #2563eb; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Track Your Shipment</a>
-                </div>
+            <div style="text-align: center; margin-top: 40px;">
+                <a href="${trackingLink}" style="background-color: #2563eb; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Track Your Shipment</a>
             </div>
-            <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 12px;">
-                <p>&copy; 2026 Global Nexus Tracker Logistics Solutions. All rights reserved.</p>
-            </div>
-        </div>
-    `;
+        `
+    );
 
     try {
         const { error } = await resend.emails.send({
-            from: `"${process.env.FROM_NAME || "Global Nexus Tracker"}" <${process.env.FROM_EMAIL || "support@globalnexustracker.com"}>`,
+            from: getFromAddress(),
+            replyTo: getReplyToAddress(),
             to: [to],
             subject,
             html: htmlContent,

@@ -54,3 +54,30 @@ export interface ChatMessage {
     content: string;
     created_at: string;
 }
+
+export interface EmailThread {
+    id: string;
+    recipient_name?: string | null;
+    recipient_email: string;
+    sender_name?: string | null;
+    sender_email: string;
+    subject: string;
+    reply_to: string;
+    last_message?: string | null;
+    status: 'open' | 'closed';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface EmailMessage {
+    id: string;
+    thread_id: string;
+    direction: 'inbound' | 'outbound';
+    sender_name?: string | null;
+    sender_email?: string | null;
+    recipient_name?: string | null;
+    recipient_email?: string | null;
+    subject: string;
+    content: string;
+    created_at: string;
+}
