@@ -128,6 +128,10 @@ export async function notifyDirectEmail(params: {
         );
     }
 
+    if (!result.success) {
+        return { success: false, error: result.error };
+    }
+
     return { success: true, threadId, replyTo };
 }
 
@@ -184,5 +188,5 @@ export async function replyToEmailThread(params: {
             .eq("id", params.threadId);
     }
 
-    return result;
+    return result.success ? result : { success: false, error: result.error };
 }

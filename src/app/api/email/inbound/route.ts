@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (threadError || !thread) {
-            return NextResponse.json({ success: false, error: "Thread not found" }, { status: 404 });
+            return NextResponse.json({ success: true, ignored: true });
         }
 
         const now = new Date().toISOString();
@@ -65,12 +65,12 @@ export async function POST(request: NextRequest) {
             .eq("id", threadId);
 
         if (updateError) {
-            return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
+            return NextResponse.json({ success: true, ignored: true });
         }
 
         return NextResponse.json({ success: true });
     } catch (error) {
         const message = error instanceof Error ? error.message : "Invalid inbound payload";
-        return NextResponse.json({ success: false, error: message }, { status: 400 });
+        return NextResponse.json({ success: true, ignored: true, warning: message });
     }
 }

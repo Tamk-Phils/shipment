@@ -7,6 +7,9 @@ import { EmailMessage, EmailThread } from "@/types";
 import { notifyDirectEmail, replyToEmailThread } from "@/app/actions/email";
 
 export default function EmailInboxPage() {
+    const EMAIL_THREADS_KEY = "nexustrack_email_threads";
+    const EMAIL_MESSAGES_KEY = "nexustrack_email_messages";
+
     const [threads, setThreads] = useState<EmailThread[]>([]);
     const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
     const [messages, setMessages] = useState<EmailMessage[]>([]);
@@ -22,18 +25,57 @@ export default function EmailInboxPage() {
     const scrollRef = useRef<HTMLDivElement>(null);
     const inboundConnected = false;
 
+    const readLocalThreads = () => {
+        if (typeof window === "undefined") return [] as EmailThread[];
+        const saved = window.localStorage.getItem(EMAIL_THREADS_KEY);
+        return saved ? (JSON.parse(saved) as EmailThread[]) : [];
+    };
+
+    const readLocalMessages = (threadId: string) => {
+        if (typeof window === "undefined") return [] as EmailMessage[];
+        const saved = window.localStorage.getItem(EMAIL_MESSAGES_KEY);
+        const allMessages = saved ? (JSON.parse(saved) as EmailMessage[]) : [];
+        return allMessages.filter((message) => message.thread_id === threadId);
+    };
+
+    const saveLocalThread = (thread: EmailThread) => {
+        if (typeof window === "undefined") return;
+        const nextThreads = [thread, ...readLocalThreads().filter((item) => item.id !== thread.id)];
+        window.localStorage.setItem(EMAIL_THREADS_KEY, JSON.stringify(nextThreads));
+    };
+
+    const saveLocalMessage = (message: EmailMessage) => {
+        if (typeof window === "undefined") return;
+        const saved = window.localStorage.getItem(EMAIL_MESSAGES_KEY);
+        const allMessages = saved ? (JSON.parse(saved) as EmailMessage[]) : [];
+        const nextMessages = [message, ...allMessages.filter((item) => item.id !== message.id)];
+        window.localStorage.setItem(EMAIL_MESSAGES_KEY, JSON.stringify(nextMessages));
+    };
+
     const selectedThread = threads.find((thread) => thread.id === selectedThreadId) || null;
 
     const loadThreads = useCallback(async () => {
-        const { data, error } = await supabase
-            .from("email_threads")
-            .select("*")
-            .order("updated_at", { ascending: false });
+        try {
+            const { data, error } = await supabase
+                .from("email_threads")
+                .select("*")
+                .order("updated_at", { ascending: false });
 
-        if (!error && data) {
-            setThreads(data);
-            if (!selectedThreadId && data.length > 0) {
-                setSelectedThreadId(data[0].id);
+            if (error) throw error;
+
+            if (data) {
+                setThreads(data);
+                if (!selectedThreadId && data.length > 0) {
+                    setSelectedThreadId(data[0].id);
+                }
+                setIsLoadingThreads(false);
+                return;
+            }
+        } catch {
+            const localThreads = readLocalThreads();
+            setThreads(localThreads);
+            if (!selectedThreadId && localThreads.length > 0) {
+                setSelectedThreadId(localThreads[0].id);
             }
         }
 
@@ -42,14 +84,22 @@ export default function EmailInboxPage() {
 
     const loadMessages = useCallback(async (threadId: string) => {
         setIsLoadingMessages(true);
-        const { data, error } = await supabase
-            .from("email_messages")
-            .select("*")
-            .eq("thread_id", threadId)
-            .order("created_at", { ascending: true });
+        try {
+            const { data, error } = await supabase
+                .from("email_messages")
+                .select("*")
+                .eq("thread_id", threadId)
+                .order("created_at", { ascending: true });
 
-        if (!error && data) {
-            setMessages(data);
+            if (error) throw error;
+
+            if (data) {
+                setMessages(data);
+                setIsLoadingMessages(false);
+                return;
+            }
+        } catch {
+            setMessages(readLocalMessages(threadId));
         }
 
         setIsLoadingMessages(false);
@@ -114,6 +164,33 @@ export default function EmailInboxPage() {
                 throw new Error(typeof result.error === "string" ? result.error : "Failed to send email");
             }
 
+            saveLocalThread({
+                id: result.threadId,
+                recipient_name: composeName.trim() || null,
+                recipient_email: composeEmail.trim(),
+                sender_name: "Global Nexus Tracker Support",
+                sender_email: "support@globalnexustracker.com",
+                subject: composeSubject.trim(),
+                reply_to: result.replyTo,
+                last_message: composeMessage.trim(),
+                status: "open",
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            });
+
+            saveLocalMessage({
+                id: crypto.randomUUID(),
+                thread_id: result.threadId,
+                direction: "outbound",
+                sender_name: "Global Nexus Tracker Support",
+                sender_email: "support@globalnexustracker.com",
+                recipient_name: composeName.trim() || null,
+                recipient_email: composeEmail.trim(),
+                subject: composeSubject.trim(),
+                content: composeMessage.trim(),
+                created_at: new Date().toISOString(),
+            });
+
             setStatusMessage(`Sent to ${composeEmail.trim()}. Replies will appear here once inbound mail is connected to /api/email/inbound.`);
             setComposeMessage("");
             setComposeSubject("");
@@ -142,6 +219,27 @@ export default function EmailInboxPage() {
             const result = await replyToEmailThread({ threadId: selectedThreadId, message: replyMessage.trim() });
             if (!result.success) {
                 throw new Error(typeof result.error === "string" ? result.error : "Failed to send reply");
+            }
+
+            const thread = threads.find((item) => item.id === selectedThreadId);
+            if (thread) {
+                saveLocalMessage({
+                    id: crypto.randomUUID(),
+                    thread_id: selectedThreadId,
+                    direction: "outbound",
+                    sender_name: thread.sender_name || "Global Nexus Tracker",
+                    sender_email: thread.sender_email,
+                    recipient_name: thread.recipient_name || null,
+                    recipient_email: thread.recipient_email,
+                    subject: thread.subject,
+                    content: replyMessage.trim(),
+                    created_at: new Date().toISOString(),
+                });
+                saveLocalThread({
+                    ...thread,
+                    last_message: replyMessage.trim(),
+                    updated_at: new Date().toISOString(),
+                });
             }
 
             setReplyMessage("");
