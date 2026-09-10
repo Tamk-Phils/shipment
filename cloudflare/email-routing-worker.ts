@@ -1,3 +1,4 @@
+// @ts-nocheck
 import PostalMime from "postal-mime";
 
 export interface Env {

@@ -120,7 +120,7 @@ export default function EmailInboxPage() {
             setComposeName("");
             setComposeEmail("");
 
-            if (result.threadId) {
+            if (result.success && result.threadId) {
                 setSelectedThreadId(result.threadId);
             }
             await loadThreads();

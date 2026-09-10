@@ -4,6 +4,19 @@ import { randomUUID } from "crypto";
 import { supabase } from "@/lib/supabase";
 import { buildThreadReplyAddress, sendDirectEmail, sendShipmentCreatedEmail, sendShipmentUpdateEmail } from "@/lib/email";
 
+type DirectEmailSuccess = {
+    success: true;
+    threadId: string;
+    replyTo: string;
+};
+
+type DirectEmailFailure = {
+    success: false;
+    error: string | unknown;
+};
+
+type DirectEmailResult = DirectEmailSuccess | DirectEmailFailure;
+
 type DirectEmailThread = {
     id: string;
     recipient_name: string | null;
@@ -88,7 +101,7 @@ export async function notifyDirectEmail(params: {
     message: string;
     recipientName?: string;
     senderName?: string;
-}) {
+}): Promise<DirectEmailResult> {
     if (!process.env.RESEND_API_KEY) {
         console.warn("Email notification skipped: RESEND_API_KEY credentials not configured");
         return { success: false, error: "RESEND_API_KEY not configured" };
@@ -115,7 +128,7 @@ export async function notifyDirectEmail(params: {
         );
     }
 
-    return { ...result, threadId, replyTo };
+    return { success: true, threadId, replyTo };
 }
 
 export async function replyToEmailThread(params: {
