@@ -6,3 +6,4 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 INBOUND_WEBHOOK_URL = "https://www.globalnexustracker.com/api/email/inbound"
+INBOUND_WEBHOOK_SECRET = "nexus_inbound_secret_2026"

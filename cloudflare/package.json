@@ -9,8 +9,6 @@
     "postal-mime": "^2.0.6"
   },
   "devDependencies": {
-    "wrangler": "^4.0.0",
-    "typescript": "^5.0.0",
-    "@cloudflare/workers-types": "^4.20260901.0"
+    "wrangler": "^3.0.0"
   }
 }

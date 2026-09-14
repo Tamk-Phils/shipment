@@ -7,7 +7,7 @@ export interface Env {
 }
 
 type InboundEmailPayload = {
-    threadId: string;
+    threadId?: string;
     replyTo: string;
     fromName: string;
     fromEmail: string;
@@ -17,48 +17,64 @@ type InboundEmailPayload = {
     messageId?: string;
 };
 
-const extractThreadId = (replyTo: string) => {
-    const match = replyTo.match(/^[^+@]+\+([a-f0-9-]{8,})@/i);
+const extractThreadId = (address: string) => {
+    if (!address) return "";
+    const match = address.match(/^[^+@]+\+([a-f0-9-]{8,})@/i);
     return match?.[1] || "";
 };
 
 export default {
     async email(message: ForwardableEmailMessage, env: Env): Promise<void> {
-        const parsed = await PostalMime.parse(message.raw);
-        const subject = parsed.subject || message.headers.get("subject") || "Re: Direct Message";
-        const replyTo = message.to;
-        const fromEmail = message.from;
-        const fromName = parsed.from?.name || parsed.from?.address || message.headers.get("from") || "Customer";
-        const threadId = extractThreadId(replyTo);
+        try {
+            console.log(`[Email Worker] Processing email from ${message.from} to ${message.to}`);
 
-        if (!threadId) {
-            message.setReject("Missing thread identifier");
-            return;
-        }
+            const parsed = await PostalMime.parse(message.raw);
+            const subject = parsed.subject || message.headers.get("subject") || "Customer Inquiry";
+            const replyTo = message.to;
+            const fromEmail = parsed.from?.address || message.from;
+            const fromName = parsed.from?.name || parsed.from?.address || message.headers.get("from") || "Customer";
 
-        const payload: InboundEmailPayload = {
-            threadId,
-            replyTo,
-            fromName,
-            fromEmail,
-            subject,
-            text: parsed.text || parsed.html || "",
-            html: parsed.html || undefined,
-            messageId: message.headers.get("message-id") || undefined,
-        };
+            // Attempt to locate a thread identifier in the envelope recipient or header recipients
+            const threadId =
+                extractThreadId(replyTo) ||
+                extractThreadId(message.headers.get("to") || "") ||
+                extractThreadId(message.headers.get("delivered-to") || "") ||
+                "";
 
-        const response = await fetch(env.INBOUND_WEBHOOK_URL, {
-            method: "POST",
-            headers: {
-                "content-type": "application/json",
-                "x-inbound-email-secret": env.INBOUND_WEBHOOK_SECRET,
-            },
-            body: JSON.stringify(payload),
-        });
+            const payload: InboundEmailPayload = {
+                threadId: threadId || undefined,
+                replyTo,
+                fromName,
+                fromEmail,
+                subject,
+                text: parsed.text || "",
+                html: parsed.html || undefined,
+                messageId: message.headers.get("message-id") || undefined,
+            };
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Inbound webhook failed: ${response.status} ${errorText}`);
+            const webhookUrl = env.INBOUND_WEBHOOK_URL || "https://www.globalnexustracker.com/api/email/inbound";
+            console.log(`[Email Worker] Forwarding to webhook: ${webhookUrl}`);
+
+            const response = await fetch(webhookUrl, {
+                method: "POST",
+                headers: {
+                    "content-type": "application/json",
+                    ...(env.INBOUND_WEBHOOK_SECRET ? { "x-inbound-email-secret": env.INBOUND_WEBHOOK_SECRET } : {}),
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`[Email Worker] Inbound webhook rejected (${response.status}): ${errorText}`);
+                throw new Error(`Inbound webhook failed: ${response.status} ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log("[Email Worker] Inbound email processed successfully:", result);
+        } catch (err) {
+            console.error("[Email Worker] Fatal error processing email:", err);
+            throw err;
         }
     },
 } satisfies ExportedHandler<Env>;
