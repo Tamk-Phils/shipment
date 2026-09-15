@@ -33,12 +33,12 @@ interface DirectEmailParams {
 
 const getTrackingLink = () => `${process.env.NEXT_PUBLIC_APP_URL || "https://nexustrack.com"}/tracking`;
 
-const getFromAddress = () => `"${process.env.FROM_NAME || "Global Nexus Tracker"}" <${process.env.FROM_EMAIL || "support@globalnexustrack.com"}>`;
+const getFromAddress = () => `"${process.env.FROM_NAME || "Global Nexus Tracker"}" <${process.env.FROM_EMAIL || "support@globalnexustracker.com"}>`;
 
-const getReplyToAddress = () => process.env.ADMIN_REPLY_TO_EMAIL || process.env.FROM_EMAIL || "support@globalnexustrack.com";
+const getReplyToAddress = () => process.env.ADMIN_REPLY_TO_EMAIL || process.env.FROM_EMAIL || "support@globalnexustracker.com";
 
 const getReplyToDomain = () => {
-    const fromEmail = process.env.FROM_EMAIL || "support@globalnexustrack.com";
+    const fromEmail = process.env.FROM_EMAIL || "support@globalnexustracker.com";
     const parts = fromEmail.split("@");
     return parts.length === 2 ? { localPart: parts[0], domain: parts[1] } : { localPart: "support", domain: "globalnexustracker.com" };
 };

@@ -23,7 +23,6 @@ export default function EmailInboxPage() {
     const [isSending, setIsSending] = useState(false);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const inboundConnected = false;
 
     const readLocalThreads = () => {
         if (typeof window === "undefined") return [] as EmailThread[];
@@ -191,7 +190,7 @@ export default function EmailInboxPage() {
                 created_at: new Date().toISOString(),
             });
 
-            setStatusMessage(`Sent to ${composeEmail.trim()}. Replies will appear here once inbound mail is connected to /api/email/inbound.`);
+            setStatusMessage(`Email sent successfully to ${composeEmail.trim()}.`);
             setComposeMessage("");
             setComposeSubject("");
             setComposeName("");
@@ -257,21 +256,12 @@ export default function EmailInboxPage() {
             <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                     <h1 className="text-4xl font-extrabold text-slate-900 mb-2">Email Inbox</h1>
-                    <p className="text-slate-600 text-lg font-bold">Track outbound emails and reply from inside the portal.</p>
+                    <p className="text-slate-600 text-lg font-bold">Manage conversations, inbound customer emails, and replies.</p>
                 </div>
                 <button onClick={loadThreads} className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-200 text-slate-600 font-bold hover:text-primary hover:border-primary transition-colors">
                     <RefreshCw size={18} /> Refresh
                 </button>
             </div>
-
-            {!inboundConnected && (
-                <div className="rounded-[28px] border border-amber-200 bg-amber-50 px-6 py-4 text-amber-900">
-                    <p className="font-extrabold mb-1">Inbound replies are not connected yet.</p>
-                    <p className="text-sm font-medium leading-6">
-                        The portal can send email now, but replies will only show here after your mail provider or forwarding rule posts inbound messages to <span className="font-bold">/api/email/inbound</span>.
-                    </p>
-                </div>
-            )}
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <div className="xl:col-span-1 bg-white rounded-[36px] border border-slate-100 shadow-sm overflow-hidden">
@@ -317,11 +307,11 @@ export default function EmailInboxPage() {
                     <div className="p-6 md:p-8 border-b border-slate-100 bg-white flex items-start justify-between gap-4">
                         {selectedThread ? (
                             <div>
-                                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Recipient</p>
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Customer</p>
                                 <h2 className="text-3xl font-extrabold text-slate-900">{selectedThread.recipient_name || selectedThread.recipient_email}</h2>
                                 <p className="text-slate-500 font-medium mt-1">{selectedThread.recipient_email}</p>
-                                <p className="text-xs font-bold text-slate-400 mt-2">Reply route: {selectedThread.reply_to}</p>
-                                <p className="text-xs font-bold text-amber-600 mt-2">Replies will not appear in the portal until inbound mail is connected.</p>
+                                <p className="text-xs font-bold text-slate-600 mt-2">Subject: <span className="text-slate-900">{selectedThread.subject}</span></p>
+                                <p className="text-[11px] font-medium text-slate-400 mt-1">Reply Address: {selectedThread.reply_to}</p>
                             </div>
                         ) : (
                             <div>

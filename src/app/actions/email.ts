@@ -108,8 +108,8 @@ export async function notifyDirectEmail(params: {
     }
 
     const threadId = randomUUID();
-    const replyTo = buildThreadReplyAddress(threadId);
-    const result = await sendDirectEmail({ ...params, replyTo });
+    const supportEmail = process.env.FROM_EMAIL || "support@globalnexustracker.com";
+    const result = await sendDirectEmail({ ...params, replyTo: supportEmail });
 
     if (result.success) {
         await persistEmailThread(
@@ -118,9 +118,9 @@ export async function notifyDirectEmail(params: {
                 recipient_name: params.recipientName || null,
                 recipient_email: params.to,
                 sender_name: params.senderName || "Global Nexus Tracker",
-                sender_email: process.env.FROM_EMAIL || "support@globalnexustracker.com",
+                sender_email: supportEmail,
                 subject: params.subject,
-                reply_to: replyTo,
+                reply_to: supportEmail,
                 last_message: params.message,
                 status: "open",
             },
@@ -132,7 +132,7 @@ export async function notifyDirectEmail(params: {
         return { success: false, error: result.error };
     }
 
-    return { success: true, threadId, replyTo };
+    return { success: true, threadId, replyTo: supportEmail };
 }
 
 export async function replyToEmailThread(params: {
@@ -154,13 +154,14 @@ export async function replyToEmailThread(params: {
         return { success: false, error: threadError?.message || "Email thread not found" };
     }
 
+    const supportEmail = process.env.FROM_EMAIL || "support@globalnexustracker.com";
     const result = await sendDirectEmail({
         to: thread.recipient_email,
         subject: thread.subject.startsWith("Re:") ? thread.subject : `Re: ${thread.subject}`,
         message: params.message,
         recipientName: thread.recipient_name || thread.recipient_email,
         senderName: thread.sender_name || "Global Nexus Tracker",
-        replyTo: thread.reply_to,
+        replyTo: supportEmail,
     });
 
     if (result.success) {
