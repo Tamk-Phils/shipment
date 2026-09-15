@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
         let createdNewThread = false;
         if (!targetThread) {
             const newThreadId = randomUUID();
+            const replyAddress = buildThreadReplyAddress(newThreadId);
             const replyAddress = process.env.FROM_EMAIL || "support@globalnexustracker.com";
             const systemSenderEmail = process.env.FROM_EMAIL || "support@globalnexustracker.com";
             const systemSenderName = process.env.FROM_NAME || "Global Nexus Tracker Support";

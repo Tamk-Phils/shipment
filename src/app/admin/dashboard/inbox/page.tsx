@@ -190,6 +190,7 @@ export default function EmailInboxPage() {
                 created_at: new Date().toISOString(),
             });
 
+            setStatusMessage(`Sent to ${composeEmail.trim()}. Replies will appear here once inbound mail is connected to /api/email/inbound.`);
             setStatusMessage(`Email sent successfully to ${composeEmail.trim()}.`);
             setComposeMessage("");
             setComposeSubject("");

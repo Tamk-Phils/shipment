@@ -78,7 +78,7 @@ export default function Footer() {
                                 <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary shrink-0">
                                     <Phone size={16} />
                                 </div>
-                                <p className="text-slate-400 text-xs font-black uppercase tracking-widest">+1 (205) 376 5055</p>
+                                <p className="text-slate-400 text-xs font-black uppercase tracking-widest">+1 (239) 373 0487</p>
                             </div>
                         </div>
                     </div>

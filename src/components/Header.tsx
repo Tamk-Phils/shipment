@@ -44,7 +44,7 @@ export default function Header() {
                 <div className="container mx-auto flex justify-between items-center">
                     <div className="flex gap-6 items-center">
                         <span className="opacity-70 hidden sm:inline">National Financial Credit Tracking</span>
-                        <span className="text-primary">Support: +1 (205) 376 5055 </span>
+                        <span className="text-primary">Support: +1 (239) 373 0487</span>
                     </div>
                     <div className="flex gap-4 items-center">
                         <Link href="/about" className="hover:text-primary transition-colors lowercase">Career</Link>
