@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { supabase } from "@/lib/supabase";
-import { buildThreadReplyAddress, extractThreadIdFromReplyAddress } from "@/lib/email";
+import { extractThreadIdFromReplyAddress } from "@/lib/email";
 
 function cleanMessageText(text?: string, html?: string): string {
     if (text && text.trim().length > 0) {
@@ -93,7 +93,6 @@ export async function POST(request: NextRequest) {
         let createdNewThread = false;
         if (!targetThread) {
             const newThreadId = randomUUID();
-            const replyAddress = buildThreadReplyAddress(newThreadId);
             const replyAddress = process.env.FROM_EMAIL || "support@globalnexustracker.com";
             const systemSenderEmail = process.env.FROM_EMAIL || "support@globalnexustracker.com";
             const systemSenderName = process.env.FROM_NAME || "Global Nexus Tracker Support";

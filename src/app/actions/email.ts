@@ -2,7 +2,7 @@
 
 import { randomUUID } from "crypto";
 import { supabase } from "@/lib/supabase";
-import { buildThreadReplyAddress, sendDirectEmail, sendShipmentCreatedEmail, sendShipmentUpdateEmail } from "@/lib/email";
+import { sendDirectEmail, sendShipmentCreatedEmail, sendShipmentUpdateEmail } from "@/lib/email";
 
 type DirectEmailSuccess = {
     success: true;
@@ -108,8 +108,6 @@ export async function notifyDirectEmail(params: {
     }
 
     const threadId = randomUUID();
-    const replyTo = buildThreadReplyAddress(threadId);
-    const result = await sendDirectEmail({ ...params, replyTo });
     const supportEmail = process.env.FROM_EMAIL || "support@globalnexustracker.com";
     const result = await sendDirectEmail({ ...params, replyTo: supportEmail });
 
@@ -120,10 +118,8 @@ export async function notifyDirectEmail(params: {
                 recipient_name: params.recipientName || null,
                 recipient_email: params.to,
                 sender_name: params.senderName || "Global Nexus Tracker",
-                sender_email: process.env.FROM_EMAIL || "support@globalnexustracker.com",
                 sender_email: supportEmail,
                 subject: params.subject,
-                reply_to: replyTo,
                 reply_to: supportEmail,
                 last_message: params.message,
                 status: "open",
@@ -136,7 +132,6 @@ export async function notifyDirectEmail(params: {
         return { success: false, error: result.error };
     }
 
-    return { success: true, threadId, replyTo };
     return { success: true, threadId, replyTo: supportEmail };
 }
 
@@ -166,7 +161,6 @@ export async function replyToEmailThread(params: {
         message: params.message,
         recipientName: thread.recipient_name || thread.recipient_email,
         senderName: thread.sender_name || "Global Nexus Tracker",
-        replyTo: thread.reply_to,
         replyTo: supportEmail,
     });
 
@@ -177,7 +171,7 @@ export async function replyToEmailThread(params: {
             thread_id: params.threadId,
             direction: "outbound",
             sender_name: thread.sender_name || "Global Nexus Tracker",
-            sender_email: thread.sender_email || (process.env.FROM_EMAIL || "support@globalnexustracker.com"),
+            sender_email: supportEmail,
             recipient_name: thread.recipient_name || null,
             recipient_email: thread.recipient_email,
             subject: thread.subject,
