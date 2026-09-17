@@ -69,6 +69,14 @@ export interface EmailThread {
     updated_at: string;
 }
 
+export interface EmailAttachment {
+    id?: string;
+    filename: string;
+    mimeType: string;
+    size?: number;
+    data: string; // base64 encoded data
+}
+
 export interface EmailMessage {
     id: string;
     thread_id: string;
@@ -79,5 +87,6 @@ export interface EmailMessage {
     recipient_email?: string | null;
     subject: string;
     content: string;
+    attachments?: EmailAttachment[];
     created_at: string;
 }

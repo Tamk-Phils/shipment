@@ -47,8 +47,25 @@ export async function POST(request: NextRequest) {
         ).trim();
 
         const subject = String(payload.subject || "Customer Inquiry").trim();
-        const content = cleanMessageText(payload.text || payload.message || payload.content, payload.html);
+        let content = cleanMessageText(payload.text || payload.message || payload.content, payload.html);
         const now = new Date().toISOString();
+
+        // Process attachments if present
+        const rawAttachments = Array.isArray(payload.attachments) ? payload.attachments : [];
+        const attachments = rawAttachments.map((att: any) => ({
+            id: randomUUID(),
+            filename: String(att.filename || "attachment"),
+            mimeType: String(att.mimeType || "application/octet-stream"),
+            size: Number(att.size || 0),
+            data: String(att.data || ""),
+        }));
+
+        const summaryContent =
+            content !== "(No content)"
+                ? content
+                : attachments.length > 0
+                ? `[Attachment: ${attachments[0].filename}]`
+                : content;
 
         let targetThread: {
             id: string;
@@ -105,7 +122,7 @@ export async function POST(request: NextRequest) {
                 sender_email: systemSenderEmail,
                 subject: subject,
                 reply_to: replyAddress,
-                last_message: content,
+                last_message: summaryContent,
                 status: "open",
                 created_at: now,
                 updated_at: now,
@@ -125,30 +142,64 @@ export async function POST(request: NextRequest) {
             createdNewThread = true;
         }
 
-        // 4. Record the inbound message
-        const { error: messageError } = await supabase.from("email_messages").insert({
-            id: randomUUID(),
-            thread_id: targetThread.id,
-            direction: "inbound",
-            sender_name: senderName,
-            sender_email: senderEmail,
-            recipient_name: targetThread.sender_name,
-            recipient_email: targetThread.sender_email,
-            subject,
-            content,
-            created_at: now,
-        });
+        // 4. Record the inbound message with attachments
+        const messageId = randomUUID();
+        let messageInserted = false;
 
-        if (messageError) {
-            console.error("[Inbound Email] Failed to insert email message:", messageError.message);
-            return NextResponse.json({ success: false, error: messageError.message }, { status: 500 });
+        // Try inserting with native attachments column if it exists
+        if (attachments.length > 0) {
+            const { error: fullInsertError } = await supabase.from("email_messages").insert({
+                id: messageId,
+                thread_id: targetThread.id,
+                direction: "inbound",
+                sender_name: senderName,
+                sender_email: senderEmail,
+                recipient_name: targetThread.sender_name,
+                recipient_email: targetThread.sender_email,
+                subject,
+                content,
+                attachments,
+                created_at: now,
+            });
+
+            if (!fullInsertError) {
+                messageInserted = true;
+            } else {
+                console.warn("[Inbound Email] Insert with attachments column failed, falling back to embedded content:", fullInsertError.message);
+            }
+        }
+
+        // Fallback: embed attachments into content if column is missing or no attachments
+        if (!messageInserted) {
+            const finalContent =
+                attachments.length > 0
+                    ? `${content}\n\n__ATTACHMENTS__:${JSON.stringify(attachments)}`
+                    : content;
+
+            const { error: basicInsertError } = await supabase.from("email_messages").insert({
+                id: messageId,
+                thread_id: targetThread.id,
+                direction: "inbound",
+                sender_name: senderName,
+                sender_email: senderEmail,
+                recipient_name: targetThread.sender_name,
+                recipient_email: targetThread.sender_email,
+                subject,
+                content: finalContent,
+                created_at: now,
+            });
+
+            if (basicInsertError) {
+                console.error("[Inbound Email] Failed to insert email message:", basicInsertError.message);
+                return NextResponse.json({ success: false, error: basicInsertError.message }, { status: 500 });
+            }
         }
 
         // 5. Update thread status and timestamp
         await supabase
             .from("email_threads")
             .update({
-                last_message: content,
+                last_message: summaryContent,
                 updated_at: now,
                 status: "open",
             })
@@ -158,6 +209,7 @@ export async function POST(request: NextRequest) {
             success: true,
             threadId: targetThread.id,
             createdNewThread,
+            attachmentsCount: attachments.length,
         });
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Internal server error";

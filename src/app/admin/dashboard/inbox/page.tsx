@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Inbox, Loader2, Mail, Search, Send, MessageSquare, RefreshCw, ChevronLeft } from "lucide-react";
+import { Inbox, Loader2, Mail, Search, Send, MessageSquare, RefreshCw, ChevronLeft, Download, FileText, X, Eye } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { EmailMessage, EmailThread } from "@/types";
+import { EmailAttachment, EmailMessage, EmailThread } from "@/types";
 import { notifyDirectEmail, replyToEmailThread } from "@/app/actions/email";
 
 export default function EmailInboxPage() {
@@ -22,7 +22,50 @@ export default function EmailInboxPage() {
     const [replyMessage, setReplyMessage] = useState("");
     const [isSending, setIsSending] = useState(false);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
+    const [previewAttachment, setPreviewAttachment] = useState<EmailAttachment | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    const getAttachments = (msg: EmailMessage): EmailAttachment[] => {
+        if (Array.isArray(msg.attachments) && msg.attachments.length > 0) {
+            return msg.attachments;
+        }
+        if (typeof msg.content === "string" && msg.content.includes("__ATTACHMENTS__:")) {
+            try {
+                const parts = msg.content.split("__ATTACHMENTS__:");
+                return JSON.parse(parts[1]);
+            } catch {
+                return [];
+            }
+        }
+        return [];
+    };
+
+    const getCleanContent = (msg: EmailMessage): string => {
+        if (typeof msg.content === "string" && msg.content.includes("__ATTACHMENTS__:")) {
+            return msg.content.split("__ATTACHMENTS__:")[0].trim();
+        }
+        return msg.content;
+    };
+
+    const formatBytes = (bytes?: number) => {
+        if (!bytes || bytes <= 0) return "";
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    };
+
+    const downloadAttachment = (att: EmailAttachment) => {
+        try {
+            const link = document.createElement("a");
+            link.href = `data:${att.mimeType || "application/octet-stream"};base64,${att.data}`;
+            link.download = att.filename || "attachment";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            console.error("Failed to download attachment:", err);
+        }
+    };
 
     const readLocalThreads = () => {
         if (typeof window === "undefined") return [] as EmailThread[];
@@ -339,18 +382,121 @@ export default function EmailInboxPage() {
                                 No messages in this thread yet.
                             </div>
                         ) : (
-                            messages.map((message) => (
-                                <div key={message.id} className={`flex ${message.direction === "outbound" ? "justify-end" : "justify-start"}`}>
-                                    <div className={`max-w-[85%] md:max-w-[60%] p-4 md:p-5 rounded-[24px] shadow-sm ${message.direction === "outbound" ? "bg-slate-900 text-white rounded-tr-none" : "bg-white text-slate-900 border border-slate-100 rounded-tl-none"}`}>
-                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-3 opacity-60">
-                                            {message.direction === "outbound" ? <Send size={12} /> : <MessageSquare size={12} />}
-                                            {message.direction === "outbound" ? "Admin reply" : "Customer reply"}
+                            messages.map((message) => {
+                                const isOutbound = message.direction === "outbound";
+                                const cleanText = getCleanContent(message);
+                                const atts = getAttachments(message);
+
+                                return (
+                                    <div key={message.id} className={`flex ${isOutbound ? "justify-end" : "justify-start"}`}>
+                                        <div className={`max-w-[85%] md:max-w-[65%] p-4 md:p-5 rounded-[24px] shadow-sm ${isOutbound ? "bg-slate-900 text-white rounded-tr-none" : "bg-white text-slate-900 border border-slate-100 rounded-tl-none"}`}>
+                                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-3 opacity-60">
+                                                {isOutbound ? <Send size={12} /> : <MessageSquare size={12} />}
+                                                {isOutbound ? "Admin reply" : "Customer reply"}
+                                            </div>
+                                            {cleanText && cleanText !== "(No content)" && (
+                                                <p className="whitespace-pre-wrap leading-7 font-medium">{cleanText}</p>
+                                            )}
+
+                                            {atts.length > 0 && (
+                                                <div className="mt-3 pt-3 border-t border-slate-200/40 space-y-2.5">
+                                                    <p className={`text-[10px] font-extrabold uppercase tracking-wider ${isOutbound ? "text-slate-400" : "text-slate-500"}`}>
+                                                        Attachments ({atts.length})
+                                                    </p>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                                        {atts.map((att, idx) => {
+                                                            const isImage = (att.mimeType || "").startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(att.filename || "");
+                                                            const dataUri = `data:${att.mimeType || "application/octet-stream"};base64,${att.data}`;
+
+                                                            if (isImage) {
+                                                                return (
+                                                                    <div
+                                                                        key={att.id || idx}
+                                                                        className={`overflow-hidden rounded-2xl border transition-all ${
+                                                                            isOutbound ? "bg-slate-800/80 border-slate-700" : "bg-slate-50 border-slate-200/80"
+                                                                        }`}
+                                                                    >
+                                                                        <div
+                                                                            onClick={() => setPreviewAttachment(att)}
+                                                                            className="cursor-pointer aspect-video bg-slate-900/10 flex items-center justify-center relative group overflow-hidden"
+                                                                            title="Click to preview"
+                                                                        >
+                                                                            <img
+                                                                                src={dataUri}
+                                                                                alt={att.filename || "Attachment preview"}
+                                                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                                                            />
+                                                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white">
+                                                                                <Eye size={16} />
+                                                                                <span className="text-xs font-bold">Preview</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="p-2.5 flex items-center justify-between gap-2">
+                                                                            <div className="min-w-0 flex-1">
+                                                                                <p className={`text-xs font-bold truncate ${isOutbound ? "text-white" : "text-slate-900"}`} title={att.filename}>
+                                                                                    {att.filename}
+                                                                                </p>
+                                                                                {att.size ? (
+                                                                                    <p className={`text-[10px] ${isOutbound ? "text-slate-400" : "text-slate-500"}`}>
+                                                                                        {formatBytes(att.size)}
+                                                                                    </p>
+                                                                                ) : null}
+                                                                            </div>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => downloadAttachment(att)}
+                                                                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-dark transition-colors shrink-0 shadow-sm"
+                                                                                title="Download image"
+                                                                            >
+                                                                                <Download size={13} />
+                                                                                <span>Download</span>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            return (
+                                                                <div
+                                                                    key={att.id || idx}
+                                                                    className={`flex items-center justify-between gap-2.5 p-2.5 rounded-2xl border ${
+                                                                        isOutbound ? "bg-slate-800/80 border-slate-700 text-white" : "bg-slate-50 border-slate-200/80 text-slate-900"
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                                        <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
+                                                                            <FileText size={16} />
+                                                                        </div>
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <p className="text-xs font-bold truncate" title={att.filename}>{att.filename}</p>
+                                                                            {att.size ? (
+                                                                                <p className={`text-[10px] ${isOutbound ? "text-slate-400" : "text-slate-500"}`}>
+                                                                                    {formatBytes(att.size)}
+                                                                                </p>
+                                                                            ) : null}
+                                                                        </div>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => downloadAttachment(att)}
+                                                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-dark transition-colors shrink-0"
+                                                                        title="Download file"
+                                                                    >
+                                                                        <Download size={13} />
+                                                                        <span>Download</span>
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <p className={`text-[10px] mt-3 opacity-40 text-right`}>{new Date(message.created_at).toLocaleString()}</p>
                                         </div>
-                                        <p className="whitespace-pre-wrap leading-7 font-medium">{message.content}</p>
-                                        <p className={`text-[10px] mt-3 opacity-40 text-right`}>{new Date(message.created_at).toLocaleString()}</p>
                                     </div>
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
 
@@ -409,6 +555,61 @@ export default function EmailInboxPage() {
                     </div>
                 </form>
             </div>
+
+            {/* Attachment Image Preview Modal */}
+            {previewAttachment && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-6"
+                    onClick={() => setPreviewAttachment(null)}
+                >
+                    <div
+                        className="relative max-w-4xl w-full max-h-[90vh] bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
+                            <div className="min-w-0 flex-1 pr-4">
+                                <h3 className="text-sm md:text-base font-bold text-white truncate" title={previewAttachment.filename}>
+                                    {previewAttachment.filename}
+                                </h3>
+                                {previewAttachment.size ? (
+                                    <p className="text-xs text-slate-400">
+                                        {formatBytes(previewAttachment.size)}
+                                    </p>
+                                ) : null}
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => downloadAttachment(previewAttachment)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-white text-xs md:text-sm font-bold hover:bg-primary-dark transition-colors shadow-sm"
+                                    title="Download image"
+                                >
+                                    <Download size={15} />
+                                    <span>Download</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewAttachment(null)}
+                                    className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                                    title="Close preview"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Image Viewer */}
+                        <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-950/60 min-h-[250px]">
+                            <img
+                                src={`data:${previewAttachment.mimeType || "application/octet-stream"};base64,${previewAttachment.data}`}
+                                alt={previewAttachment.filename || "Attachment preview"}
+                                className="max-w-full max-h-[72vh] object-contain rounded-xl shadow-lg select-none"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
