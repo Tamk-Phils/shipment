@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Inbox, Loader2, Mail, Search, Send, MessageSquare, RefreshCw, ChevronLeft, Download, FileText, X, Eye } from "lucide-react";
+import { Inbox, Loader2, Mail, Search, Send, MessageSquare, RefreshCw, ChevronLeft, Download, FileText, X, Eye, AlertCircle, Upload, Paperclip } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { EmailAttachment, EmailMessage, EmailThread } from "@/types";
 import { notifyDirectEmail, replyToEmailThread } from "@/app/actions/email";
@@ -64,6 +64,57 @@ export default function EmailInboxPage() {
             document.body.removeChild(link);
         } catch (err) {
             console.error("Failed to download attachment:", err);
+        }
+    };
+
+    const handleAttachToMessage = async (messageId: string, file: File) => {
+        try {
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const resultStr = reader.result as string;
+                const base64Data = resultStr.includes(",") ? resultStr.split(",")[1] : resultStr;
+
+                const newAttachment: EmailAttachment = {
+                    id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `att-${Date.now()}`,
+                    filename: file.name,
+                    mimeType: file.type || "image/png",
+                    size: file.size,
+                    data: base64Data,
+                };
+
+                const targetMsg = messages.find((m) => m.id === messageId);
+                if (!targetMsg) return;
+
+                const currentAtts = getAttachments(targetMsg);
+                const updatedAtts = [...currentAtts, newAttachment];
+                const cleanContent = getCleanContent(targetMsg);
+                const newContent = `${cleanContent}\n\n__ATTACHMENTS__:${JSON.stringify(updatedAtts)}`;
+
+                const { error } = await supabase
+                    .from("email_messages")
+                    .update({ content: newContent })
+                    .eq("id", messageId);
+
+                if (error) {
+                    console.error("Failed to update message attachments:", error.message);
+                    setStatusMessage("Failed to attach file to message.");
+                    return;
+                }
+
+                setMessages((prev) =>
+                    prev.map((m) =>
+                        m.id === messageId
+                            ? { ...m, content: newContent, attachments: updatedAtts }
+                            : m
+                    )
+                );
+                setStatusMessage("Attachment added successfully!");
+                setTimeout(() => setStatusMessage(null), 3500);
+            };
+            reader.readAsDataURL(file);
+        } catch (err) {
+            console.error("Error attaching file:", err);
+            setStatusMessage("Error reading file.");
         }
     };
 
@@ -398,6 +449,41 @@ export default function EmailInboxPage() {
                                                 <p className="whitespace-pre-wrap leading-7 font-medium">{cleanText}</p>
                                             )}
 
+                                            {/* Notice if older message has an uncaptured image */}
+                                            {atts.length === 0 && /<image\d*\.(png|jpg|jpeg|gif|webp)>/i.test(cleanText) && (
+                                                <div className={`mt-3 p-3.5 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                                                    isOutbound 
+                                                        ? "bg-amber-500/10 border-amber-500/20 text-amber-200" 
+                                                        : "bg-amber-50 border-amber-200 text-amber-900"
+                                                }`}>
+                                                    <div className="flex items-start gap-2.5">
+                                                        <AlertCircle size={16} className="shrink-0 text-amber-500 mt-0.5" />
+                                                        <div>
+                                                            <p className="font-bold">Image attachment not captured in this earlier email</p>
+                                                            <p className="text-[11px] opacity-80 mt-0.5">
+                                                                This email arrived before email attachment extraction was deployed. If you have the image or screenshot, you can attach it directly here.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <label className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold cursor-pointer transition-colors shrink-0 shadow-sm">
+                                                        <Upload size={14} />
+                                                        <span>Upload Screenshot</span>
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            className="hidden"
+                                                            onChange={(e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (file) {
+                                                                    handleAttachToMessage(message.id, file);
+                                                                    e.target.value = "";
+                                                                }
+                                                            }}
+                                                        />
+                                                    </label>
+                                                </div>
+                                            )}
+
                                             {atts.length > 0 && (
                                                 <div className="mt-3 pt-3 border-t border-slate-200/40 space-y-2.5">
                                                     <p className={`text-[10px] font-extrabold uppercase tracking-wider ${isOutbound ? "text-slate-400" : "text-slate-500"}`}>
@@ -492,7 +578,27 @@ export default function EmailInboxPage() {
                                                 </div>
                                             )}
 
-                                            <p className={`text-[10px] mt-3 opacity-40 text-right`}>{new Date(message.created_at).toLocaleString()}</p>
+                                            <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-200/30">
+                                                <label className={`inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer transition-colors ${
+                                                    isOutbound ? "text-slate-400 hover:text-white" : "text-slate-500 hover:text-primary"
+                                                }`}>
+                                                    <Paperclip size={12} />
+                                                    <span>Attach file</span>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*,application/pdf"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                handleAttachToMessage(message.id, file);
+                                                                e.target.value = "";
+                                                            }
+                                                        }}
+                                                    />
+                                                </label>
+                                                <p className="text-[10px] opacity-40">{new Date(message.created_at).toLocaleString()}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 );
